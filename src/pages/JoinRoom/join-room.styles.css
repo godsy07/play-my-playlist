@@ -28,8 +28,8 @@
   width: 70%;
 }
 .text-div button {
-  margin-left: 3px;
-  width: calc(30% - 3px);
+  margin-left: 5px;
+  width: calc(30% + 6px);
 }
 .join-room-button-div {
   display: flex;
