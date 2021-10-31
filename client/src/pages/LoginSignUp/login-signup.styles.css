@@ -1,16 +1,40 @@
-.form-div {
+.form-divcolumnsignup{
   min-height: 200px;
   background: linear-gradient(
-      rgba(245, 46, 179, 0.45),
-      rgba(124, 30, 133, 0.45)
-    ),
-    url("../../images/backgrounds/abstract.jpg");
+    rgba(245, 46, 179, 0.45),
+    rgba(124, 30, 133, 0.45)
+  
+    ), 
+    url("../../images/backgrounds/img2.jpg");
+   
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-size: cover;
 }
 
+.form-divcolumnslogin{
+  min-height: 200px;
+  background: linear-gradient(
+    rgba(191, 148, 69, 0.45),
+
+    rgba(14, 8, 1, 0.45)
+    
+  
+    ), 
+    url("../../images/backgrounds/scenery.jpg");
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+
+
 .form-space {
   border-radius: 20px;
   background-color: rgba(188, 210, 223, 0.8);
 }
+
+
+  
+   
+ 
