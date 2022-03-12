@@ -64,18 +64,13 @@ const addSong = async (req, res) => {
 };
 
 const deleteSong = async (req, res) => {
-  const { song_id, player_id } = req.body;
+  const { song_id } = req.body;
   try {
     const songData = await songModel.findOne({ _id: song_id });
     if (songData === null) {
       return res.status(400).json({
         success: false,
         message: "Can't find the song you are looking for.",
-      });
-    } else if (player_id !== songData.player_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Only the owner can delete the song.",
       });
     } else {
       // const deleteSong = await songModel.findOneAndUpdate({ room_id, player_id }, { songs: songsArray });
@@ -254,6 +249,7 @@ const votePlayer = async (req, res) => {
         voted_player: votedUserData.name,
       });
   } catch (error) {
+    console.log(error);
     return res
       .status(500)
       .json({ success: false, message: "Some error occurred in server." });
