@@ -3,7 +3,7 @@ import logo from "../../../images/PMPL-LOGO.png";
 import {Link, useHistory } from "react-router-dom";
 import Swal from "sweetalert2";
 import "./main-header.styles.css";
-import { Dropdown, DropdownButton } from "react-bootstrap";
+import { Dropdown } from "react-bootstrap";
 import AvatarIcon from "../../../components/AvatarIcon/AvatarIcon";
 import axios from "axios";
 import { DATA_URL } from "../../..";

@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React from "react";
 import {
   Container,
   Row,
@@ -10,28 +10,22 @@ import {
 } from "react-bootstrap";
 
 import AvatarIcon from "../../components/AvatarIcon/AvatarIcon";
-import {
-  FaPlay,
-  FaMusic,
-} from "react-icons/fa";
+import { FaPlay, FaMusic } from "react-icons/fa";
 import { FiRefreshCcw } from "react-icons/fi";
 import { MdWhereToVote } from "react-icons/md";
 import musicImage from "../../images/chatroomimg.png";
 
 import "./game-room.styles.css";
 
-const GameRoom = (
-  {
-    GameStatus,
-    roomDetails,
-    roomPlayers,
-    currentSong,
-    onClickFetchSong,
-    handleTakingVotes,
-    handleVotingPlayer,
-  },
-  ref
-) => {
+const GameRoom = ({
+  GameStatus,
+  roomDetails,
+  roomPlayers,
+  currentSong,
+  onClickFetchSong,
+  handleTakingVotes,
+  handleVotingPlayer,
+}) => {
   // if (notification) {
   //  <NotifyToastContainer title="Godson" message='This message is for Godson' type='success' />
   // }
@@ -118,7 +112,6 @@ const GameRoom = (
               >
                 {/* <FaCloudDownloadAlt /> */}
                 <FiRefreshCcw
-                  ref={ref}
                   onClick={onClickFetchSong}
                   title='Fetch random song'
                 />
@@ -247,4 +240,4 @@ const GameRoom = (
   );
 };
 
-export default forwardRef(GameRoom);
+export default GameRoom;

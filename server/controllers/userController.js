@@ -96,16 +96,15 @@ const createUser = async (req, res) => {
 // RESEND Passcode
 const resendPassCode = async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { email } = req.body;
     let verifyUser,
       message = "";
     // Schema defination for Validation of details recieved
     const schema = Joi.object({
-      name: Joi.string().min(4).required(),
       email: Joi.string().email().required(),
     });
     // Validation of details recieved starts here
-    const validate = schema.validate({ name, email });
+    const validate = schema.validate({ email });
     const { error } = validate;
     if (error) {
       message = error.details[0].message;
@@ -113,10 +112,19 @@ const resendPassCode = async (req, res) => {
     }
     // Add data to database if does not exist already
     let userData = await UserModel.find({ email });
-
+    
     if (userData.length === 0) {
       message = "User does not exist";
     } else {
+      if (userData[0].activation) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "User has already been activated",
+          });
+      }
+      let name = userData[0].name;
       // send verify passcodes to email
       verifyUser = await verifyUserSignup(email, name);
       // console.log(verifyUser);

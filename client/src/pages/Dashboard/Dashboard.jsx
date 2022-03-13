@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
 import { Container, Row, Col, Form, InputGroup, Button } from "react-bootstrap";
 import axios from "axios";
@@ -28,7 +28,6 @@ let socket;
 const Dashboard = (props) => {
   let history = useHistory();
   const ENDPOINT = DATA_URL;
-  const fetchRef = useRef(null);
   const [GameStatus, setGameStatus] = useState('not_started');
   const [joinRoomStatus, setJoinRoomStatus] = useState(false);
   const [userID, setUserID] = useState("");
@@ -320,7 +319,6 @@ const Dashboard = (props) => {
           `${DATA_URL}/playlist/api/song/delete-song`,
           {
             song_id,
-            player_id: userID,
           }
         );
         if (response.status === 200) {
@@ -410,12 +408,29 @@ const Dashboard = (props) => {
           // setGameStatus('end');
           alert('Game Ended');
         } else {
-          console.log("fetchRef");
-          console.log(fetchRef);
-          console.log(fetchRef.current);
           console.log("call fetch roomSongs function");
-          // fetchRef.current.click();
+          handleDeleteRoomSong(currentSong._id);
+          console.log("call fetch roomSongs function");
+          handlePickRandomSong(roomID);
         }
+      }
+
+    } catch(error) {
+      if (error.response) {
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
+    }
+  }
+  // delete song after everyone votes
+  const handleDeleteRoomSong = async (song_id) => {
+    try{
+      console.log("handleDeleteRoomSong function");
+      const response = await axios.post(`${DATA_URL}/playlist/api/song/delete-song`, { song_id });
+
+      if (response.status === 200) {
+        console.log(response);
       }
 
     } catch(error) {
@@ -436,12 +451,12 @@ const Dashboard = (props) => {
       );
       if (response.status === 200) {
         console.log(response);
+        setCurrentSong(response.data.randomSong);
         // emit event to socketIO
         socket.emit("send-random-song", {
           room_id: roomID,
           song_details: response.data.randomSong,
         });
-        setCurrentSong(response.data.randomSong);
       }
     } catch (error) {
       if (error.response) {
@@ -478,13 +493,13 @@ const Dashboard = (props) => {
         }
       );
       if (response.status === 200) {
+        console.log(response);
         socket.emit("player-vote", {
           song_details: {
             song_id: response.data.voteData.song_id,
             voted_player_id: response.data.voteData.voted_player_id,
           },
         });
-        console.log(response);
       }
     } catch (error) {
       if (error.response) {
@@ -539,7 +554,6 @@ const Dashboard = (props) => {
 
       <GameRoom
         GameStatus={GameStatus}
-        ref={fetchRef}
         roomDetails={roomDetails}
         roomPlayers={roomPlayers}
         currentSong={currentSong}
