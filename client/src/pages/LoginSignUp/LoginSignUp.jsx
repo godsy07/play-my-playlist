@@ -28,7 +28,7 @@ const LoginSignUp = (props) => {
   const [activatePassCode, setActivatePassCode] = useState("");
 
   const [activateAccount, setActivateAccount] = useState(false);
-  const [sendPassCode, setSendPassCode] = useState(false);
+  const [sentPassCode, setsentPassCode] = useState(false);
   const [height, setHeight] = useState(0);
   const [signupHeight, setSignupHeight] = useState(0);
   const [loginHeight, setLoginHeight] = useState(0);
@@ -131,6 +131,9 @@ const LoginSignUp = (props) => {
           text: response.data.message,
           // text: "You have been successfully signed up.",
         });
+        setActivateAccount(true);
+        setHeight(activateRef.current.clientHeight);
+        setsentPassCode(true);
         // history.push("/");
         return;
       }
@@ -210,7 +213,7 @@ const LoginSignUp = (props) => {
             message: "You have successfully logged in to your account.",
           },
         });
-        // history.push("/");
+        history.push("/");
         return;
       } else {
         Swal.fire({
@@ -269,6 +272,7 @@ const LoginSignUp = (props) => {
           title: "Success",
           text: response.data.message,
         });
+        setsentPassCode(true);
         // Open send PassCode Tab
         return;
       }
@@ -339,7 +343,7 @@ const LoginSignUp = (props) => {
   }
 
   return (
-    <main classname='p-0 m-0'>
+    <main className='p-0 m-0'>
       <Row md={2} xs={1} style={{ minHeight: "100vh" }}>
         <Col className='bg-warning d-flex flex-column justify-content-center align-items-center form-divcolumnsignup'>
           <div
@@ -412,7 +416,7 @@ const LoginSignUp = (props) => {
               style={{ height: height }}
             >
               <h2>Activate your Account</h2>
-              <Col className={`${sendPassCode ? "d-none" : "d-block" }`}>
+              <Col className={`${sentPassCode ? "d-none" : "d-block" }`}>
                 <Form.Group className='mb-2'>
                   <Form.Label>Enter your Email ID:</Form.Label>
                   <Form.Control
@@ -426,10 +430,10 @@ const LoginSignUp = (props) => {
                 </Form.Group>
                 <Form.Group className='mb-2'>
                   <Form.Label>Already have PassCode?</Form.Label>
-                  <Button className='rounded-pill ms-1' onClick={() => setSendPassCode(true)}>Click Here</Button>
+                  <Button className='rounded-pill ms-1' onClick={() => setsentPassCode(true)}>Click Here</Button>
                 </Form.Group>
               </Col>
-              <Col className={`${!sendPassCode ? "d-none" : "d-block" }`}>
+              <Col className={`${!sentPassCode ? "d-none" : "d-block" }`}>
                 <Form.Group className='mb-2'>
                   <Form.Label>Enter your Email ID:</Form.Label>
                   <Form.Control
@@ -451,7 +455,7 @@ const LoginSignUp = (props) => {
                 </Form.Group>
                 <Form.Group className='mb-2'>
                   <Form.Label>Do not have PassCode?</Form.Label>
-                  <Button className='rounded-pill ms-1' onClick={() => setSendPassCode(false)}>Click Here</Button>
+                  <Button className='rounded-pill ms-1' onClick={() => setsentPassCode(false)}>Click Here</Button>
                 </Form.Group>
               </Col>
                 <Form.Group className='mb-2'>
@@ -543,8 +547,10 @@ const LoginSignUp = (props) => {
               <Button
                 className='rounded-pill ms-1'
                 onClick={() => {
-                  setActivateAccount(true);
-                  setHeight(activateRef.current.clientHeight);
+                  if (!activateAccount) {
+                    setActivateAccount(true);
+                    setHeight(activateRef.current.clientHeight);
+                  }
                 }}
               >
                 Activate Account

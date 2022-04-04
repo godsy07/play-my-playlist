@@ -161,10 +161,18 @@ const getSongById = async (req, res) => {
 const chooseRandomRoomSong = async (req, res) => {
   const { room_id } = req.body;
   try {
+    const roomData = await roomModel.find({ room_id });
+    
+    if (roomData.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Please enter a valid roomID." });
+      }
+
     const songsData = await songModel.find({ room_id });
     // const songsCount = await songModel.where({ room_id: room_id }).count();
 
-    let song_index = await Math.floor(Math.random() * songsData.length); // find a rondom index number for songsData
+    let song_index = Math.floor(Math.random() * songsData.length); // find a rondom index number for songsData
     let randomSong = songsData[song_index];
 
     return res
@@ -172,6 +180,8 @@ const chooseRandomRoomSong = async (req, res) => {
       .json({
         success: true,
         randomSong,
+        songsData,
+        song_index,
         message: "Successfully fetched song.",
       });
   } catch (error) {
@@ -186,15 +196,40 @@ const chooseRandomRoomSong = async (req, res) => {
 const votePlayer = async (req, res) => {
   const { room_id, song_id, voted_player_id, player_id } = req.body;
   try {
-    const songData = await songModel.find({ _id: song_id });
-    let voteData = await voteModel.find({ room_id, player_id, song_id });
-    let scoreDetails = await scorePointModel.find({ room_id, player_id });
+    const schema = Joi.object({
+      room_id: Joi.string().min(4).required().label("Room ID"),
+      song_id: Joi.string().required().label("Song"),
+      voted_player_id: Joi.string().required().label("Voted Player"),
+      player_id: Joi.string().required().label("Player ID"),
+    });
+    // Validation of details recieved starts here
+    const validate = schema.validate({ room_id, song_id, voted_player_id, player_id });
+    const { error } = validate;
+    if (error) {
+      message = error.details[0].message;
+      return res.status(400).json({ success: false, message });
+    }
 
     let points = 0,
       scoreData,
       votedUserData;
 
-    // Check the player cannot themselves
+    const songData = await songModel.find({ _id: song_id });
+    let voteData = await voteModel.find({ room_id, player_id, song_id });
+    let scoreDetails = await scorePointModel.find({ room_id, player_id });
+    //Fetch voted user Details
+    votedUserData = await userModel
+    .find({ _id: voted_player_id });
+
+    // Check for valid inputs
+    if (songData.length === 0 || votedUserData.length === 0) {
+      return res
+      .status(400)
+      .json({ success: false, message: "Invalid data input." });
+    }
+
+
+    // Check the player cannot vote themselves
     // if (voted_player_id === player_id) {
     //   return res
     //   .status(400)
@@ -225,9 +260,11 @@ const votePlayer = async (req, res) => {
       if (songData[0].player_id === voted_player_id) {
         // If voted person is right 10 points
         points = 10;
+      } else {
+        if(scoreDetails[0].points > 5) points = -5;
       }
       points = scoreDetails[0].points + points;
-      if (points < 0) points = 0;
+      // if (points < 0) points = 0;
 
       scoreData = await scorePointModel.findOneAndUpdate(
         { room_id, player_id },
@@ -235,10 +272,6 @@ const votePlayer = async (req, res) => {
         { new: true }
       );
 
-      //Fetch voted user Details
-      votedUserData = await userModel
-        .findOne({ _id: voted_player_id })
-        .select("-_id name");
     }
     return res
       .status(200)
@@ -246,7 +279,7 @@ const votePlayer = async (req, res) => {
         success: true,
         message: "Vote Player success.",
         voteData: voteData[0],
-        voted_player: votedUserData.name,
+        voted_player: votedUserData[0].name.split(" ")[0],
       });
   } catch (error) {
     console.log(error);
@@ -260,6 +293,7 @@ const votePlayer = async (req, res) => {
 const fetchUserVote = async (req, res) => {
   const { room_id, player_id } = req.body;
   try {
+    
     return res
       .status(200)
       .json({ success: true, message: "Successfully fetched user vote." });
@@ -268,29 +302,84 @@ const fetchUserVote = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Some error occurred in server." });
+    }
+  };
+  
+  const fetchVotedPlayers = async (req, res) => {
+    try {
+      const {room_id, song_id} = req.body;
+      
+      const schema = Joi.object({
+        room_id: Joi.string().min(4).required().label("Room ID"),
+        song_id: Joi.string().required().label("Song"),
+      });
+      // Validation of details recieved starts here
+      const validate = schema.validate({ room_id, song_id });
+      const { error } = validate;
+      if (error) {
+        message = error.details[0].message;
+        return res.status(400).json({ success: false, message });
+      }
+
+      // Fetch voted info (like songName, players_ids) from db
+      const votedData = await voteModel.find({ room_id, song_id });
+
+      return res.status(200).json({ success: true, votedData, message: "Successfully fetched voted info" });
+    } catch (error) {
+      console.log(error)
+      return res
+        .status(500)
+        .json({ success: false, message: "Some error occurred in server." });  
   }
-};
-
-const removeVotedSongs = async (req, res) => {
-  const { song_id } = req.body;
-  try {
-    const deletedSong = await songModel.deleteMany({ _id: song_id });
-    console.log("deletedSong");
-    console.log(deletedSong);
-    const deletedVotes = await voteModel.deleteMany({ song_id });
-    console.log("deletedVotes");
-    console.log(deletedVotes);
-
-    return res
+}
+  
+  const removeVotedSongs = async (req, res) => {
+    const { song_id } = req.body;
+    try {
+      const deletedSong = await songModel.deleteMany({ _id: song_id });
+      console.log("deletedSong");
+      console.log(deletedSong);
+      const deletedVotes = await voteModel.deleteMany({ song_id });
+      console.log("deletedVotes");
+      console.log(deletedVotes);
+      
+      return res
       .status(200)
       .json({ success: true, message: "Votes and songs deleted." });
-  } catch (error) {
-    return res
+    } catch (error) {
+      return res
       .status(500)
       .json({ success: false, message: "Some error occured in the server." });
-  }
-};
+    }
+  };
+  
+  const fetchPlayersScores = async (req, res) => {
+    try {
+      const { room_id } = req.body;
+      
+      const schema = Joi.object({
+        room_id: Joi.string().min(4).required().label("Room ID"),
+      });
+      // Validation of details recieved starts here
+      const validate = schema.validate({ room_id });
+      const { error } = validate;
+      if (error) {
+        message = error.details[0].message;
+        return res.status(400).json({ success: false, message });
+      }
 
+      let scoreData = await scorePointModel.find({ room_id });
+
+      return res
+      .status(200)
+      .json({ success: true, scoreData, message: "Player scores successfully fetched." });
+    } catch(error) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Some error occured in the server." });
+    }
+  }
+  
 module.exports = {
   addSong,
   deleteSong,
@@ -300,5 +389,7 @@ module.exports = {
   chooseRandomRoomSong,
   votePlayer,
   fetchUserVote,
+  fetchVotedPlayers,
   removeVotedSongs,
+  fetchPlayersScores,
 };

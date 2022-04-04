@@ -81,7 +81,19 @@ const createUser = async (req, res) => {
       // Data is being stored in DB
       const data = await UserModel.create(userInfo);
 
-      message = "User account has been created successfully.";
+      verifyUser = await verifyUserSignup(email, name);
+      // console.log(verifyUser);
+      if (verifyUser.error) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Something unexpected error occurred",
+          });
+      }
+
+      message = "Verification passcode sent through email";
+      // message = "User account has been created successfully.";
       return res.status(200).json({ success: true, data, message });
     } catch (error) {
       // message = error.message;

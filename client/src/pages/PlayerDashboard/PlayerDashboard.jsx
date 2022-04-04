@@ -16,6 +16,7 @@ const PlayerDashboard = ({
   GameStatus,
   roomID,
   hostName,
+  hostProfilePic,
   roomDetails,
   roomPlayers,
   songLink,
@@ -43,7 +44,8 @@ const PlayerDashboard = ({
             style={{ backgroundColor: "rgb(200, 200, 200, 0.5)" }}
           >
             <Col lg={9} md={8} sm={7} xs={12} className='d-flex'>
-              <AvatarIcon imageUrl='https://robohash.org/36?set=set8' />
+              <AvatarIcon imageUrl={hostProfilePic} />
+              {/* <AvatarIcon imageUrl='https://robohash.org/36?set=set8' /> */}
               {roomDetails && (
                 <div className='d-flex flex-column justify-content-center m-2'>
                   <span>RoomID: {roomID}</span>
@@ -90,15 +92,17 @@ const PlayerDashboard = ({
               roomPlayers.map((item, index) => (
                 <div
                   key={index}
-                  className='d-flex flex-column justify-content-center align-items-center p-2 m-1'
+                  // className='d-flex flex-column justify-content-center align-items-center p-2 m-1'
+                  className='d-flex flex-column align-items-center p-2 m-1 text-center'
                 >
                   <AvatarIcon
-                    imageUrl='https://robohash.org/46?set=set4'
+                    imageUrl={item.profile_pic_url}
+                    // imageUrl='https://robohash.org/46?set=set4'
                     // statusDetails={true}
                     statusDetails='connected'
                     showStatus={true}
                   />
-                  <span>{item.name}</span>
+                  <span>{item.name.split(" ")[0]}</span>
                   <span>
                     {item.song_count ? item.song_count : "No"} songs added
                   </span>

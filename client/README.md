@@ -26,3 +26,4 @@ It uses various libraries which includes the following: <br/>
 - [React Transition Group](https://reactcommunity.org/react-transition-group/)
 - [Socket.io-client](https://socket.io/docs/v4/client-installation/)
 - [React Player](https://cookpete.com/react-player/)
+- [Moment JS](https://momentjs.com/)

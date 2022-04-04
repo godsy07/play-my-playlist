@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
-import { Container, Row, Col, Form, InputGroup, Button } from "react-bootstrap";
+import {
+  Container,
+  Row,
+  Col,
+  Form,
+  InputGroup,
+  Button,
+  ToastContainer,
+  ToastHeader,
+  Toast,
+} from "react-bootstrap";
 import axios from "axios";
 import io from "socket.io-client";
 
@@ -18,27 +28,32 @@ import {
 } from "react-icons/fa";
 
 import "./dashboard.styles.css";
+import moment from "moment";
 import PlayInstructionsModal from "../../components/PlayInstructions/PlayInstructions";
 import FloatingTextBlock from "../../components/layouts/FloatingTextBlock/FloatingTextBlock";
 import PlayerDashboard from "../PlayerDashboard/PlayerDashboard";
 import GameRoom from "../GameRoom/GameRoom";
+// import { NotificationToast } from "../../functionalities/pageFunctions";
 
 let socket;
 
 const Dashboard = (props) => {
   let history = useHistory();
   const ENDPOINT = DATA_URL;
-  const [GameStatus, setGameStatus] = useState('not_started');
+  const [GameStatus, setGameStatus] = useState("not_started");
   const [joinRoomStatus, setJoinRoomStatus] = useState(false);
   const [userID, setUserID] = useState("");
   const [roomID, setRoomID] = useState("");
   const [roomPlayers, setRoomPlayers] = useState([]);
   const [hostName, setHostName] = useState("");
+  const [hostID, setHostID] = useState("");
+  const [hostProfilePic, sethHostProfilePic] = useState("");
   const [guestName, setGuestName] = useState("");
   const [roomDetails, setRoomDetails] = useState(null); // For room Details to be saved
   const [message, setMessage] = useState("");
   const [chatBoxData, setChatBoxData] = useState([]);
-  const [currentSong, setCurrentSong] = useState(null);
+  const [currentSongID, setCurrentSongID] = useState("");
+  const [currentSong, setCurrentSong] = useState("");
 
   const [PlayerSongCount, setPlayerSongCount] = useState(null);
   const [songLink, setSongLink] = useState("");
@@ -46,6 +61,13 @@ const Dashboard = (props) => {
   const [showRules, setShowRules] = useState(false);
   const [RoomSongs, setRoomSongs] = useState([]);
   const [RoomSongsCount, setRoomSongsCount] = useState("");
+
+  const [showScoreboard, setShowScoreboard] = useState(false);
+  const [scoresData, setScoresData] = useState([]);
+  const [allPlayersVoted, setAllPlayersVoted] = useState(false);
+  const [toastData, setToastData] = useState(null);
+  // const [notifyData, setNotifyData] = useState(null);
+  const [showToast, setShowToast] = useState(false);
 
   // Function to set user Details
   const setUserDetails = () => {
@@ -55,18 +77,23 @@ const Dashboard = (props) => {
     setGuestName(props.userInfo.data.user_name);
     setRoomID(room_id);
     fetchRoomDetails(room_id);
-    fetchSongs(room_id,props.userInfo.data.id);
+    fetchSongs(room_id, props.userInfo.data.id);
   };
 
   // Function to fetch room Details
   const fetchRoomDetails = async (room_id) => {
     try {
-      console.log('fetchRoomDetails function called');
-      const response = await axios.post(`${DATA_URL}/playlist/api/room/get-room-details`,{ room_id });
-      console.log(response);
+      console.log("fetchRoomDetails function called");
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/room/get-room-details`,
+        { room_id }
+      );
       if (response.status === 200) {
         setRoomDetails(response.data.roomDetails);
         setHostName(response.data.host_name);
+        setHostID(response.data.host_id);
+        // set host profile pic
+        // setHostProfilePic()
       } else {
         console.log(response.data.message);
         Swal.fire({
@@ -107,7 +134,6 @@ const Dashboard = (props) => {
       );
       if (response.status === 200) {
         // Reset song input data to empty
-        console.log(response);
         setPlayerSongsList(response.data.songsData);
         setPlayerSongCount(response.data.songsCount);
         return;
@@ -130,40 +156,73 @@ const Dashboard = (props) => {
       }
     }
   };
+  const fetchVotedPlayers = async (room_id, song_id, room_users) => {
+    try {
+      console.log("fetchVotedPlayers");
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/song/fetch-voted-players`,
+        {
+          room_id,
+          song_id,
+        }
+      );
+
+      if (response.status === 200) {
+        let allVoted = true;
+        room_users.map((user) => {
+          // turn userLeft to true, if someone has not voted (i.e. their vote data does not exist in response)
+          if (
+            !response.data.votedData.find(
+              (data) => data.player_id === user.user_id
+            )
+          ) {
+            allVoted = false;
+          }
+        });
+        setAllPlayersVoted(allVoted);
+        fetchScores(allVoted);
+        // Loop through voted players and roomplayers to find player names to display
+      }
+    } catch (error) {
+      if (error.response) {
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
+    }
+  };
 
   useEffect(() => {
     socket = io(ENDPOINT);
     if (roomID.length === 0 && userID.length === 0) {
       setUserDetails();
     } else {
-    // if (roomID.length !== 0 && userID.length !== 0) {
-      // if (PlayerSongCount === null) {
-      //   // fetchPlayersDetails(); // Check if required later
-      //   fetchSongs();
-      // } else {
-        if (!joinRoomStatus) {
-          socket.emit("join_room", {
-            user_id: userID,
-            room_id: roomID,
-            name: guestName,
-            songs_list: PlayerSongsList,
-            song_count: PlayerSongCount,
-          });
-          setJoinRoomStatus(true);
-        }
-      // }
+      if (!joinRoomStatus) {
+        socket.emit("join_room", {
+          user_id: userID,
+          room_id: roomID,
+          name: guestName,
+          songs_list: PlayerSongsList,
+          song_count: PlayerSongCount,
+        });
+        setJoinRoomStatus(true);
+      }
 
       socket.on("message", (message) => {
         console.log(message);
         setChatBoxData((chatBoxData) => [...chatBoxData, message]);
       });
 
-      socket.on("gameStatus", ({game_status}) => {
-      // socket.on("gameStatus", ({game_status,room_data,room_players,users}) => {
-        console.log("gameStatus");
-        console.log(game_status);
+      socket.on("gameStatus", ({ game_status }) => {
         if (game_status === true) {
-          setGameStatus('started');
+          setGameStatus("started");
+          setToastData({
+            title: "Success",
+            message: "Welcome, the game is ON...!!!",
+            type: "success",
+            time: new Date(),
+          });
+          setShowToast(true);
           Swal.fire({
             icon: "success",
             title: "Game Started",
@@ -182,8 +241,6 @@ const Dashboard = (props) => {
             countStatus = false;
           }
         });
-        console.log("countStatus");
-        console.log(countStatus);
         if (!countStatus) {
           Swal.fire({
             icon: "error",
@@ -192,25 +249,39 @@ const Dashboard = (props) => {
           });
           return;
         }
-          handleFetchRoomSongs(roomID, userID);
-          console.log("start_game")
-          // Redirect to GameRoom emitting an event so others might also join
-          socket.emit("start_game");
-          // socket.emit("start_game", {
-          //   // room_id: roomID,
-          //   // room_data: roomDetails,
-          //   // room_players: roomPlayers,
-          // });
+        // handleFetchRoomSongs(roomID, userID);
+        // Redirect to GameRoom emitting an event so others might also join
+        socket.emit("start_game");
+      });
+
+      socket.on("recieve-song", ({ song_details }) => {
+        console.log("recieve-song");
+        // console.log(song_details)
+        setCurrentSongID(song_details._id);
+        setCurrentSong(song_details.song);
+      });
+
+      socket.on("show-scoreboard", ({ allVoted }) => {
+        console.log("show-scoreboard");
+        console.log(allVoted);
+        if (allVoted === true) fetchScores(allVoted);
       });
 
       socket.on("roomUsers", ({ users }) => {
-        console.log("roomUsers")
-        console.log(users)
+        console.log("roomUsers");
+        console.log(users);
         if (users) {
-        // if (users.length !== 0) {
           setRoomPlayers(users);
         }
       });
+
+      socket.on(
+        "fetchVoters",
+        async ({ song_id, voted_player_id, room_users }) => {
+          console.log("fetchVoters");
+          await fetchVotedPlayers(roomID, song_id, room_users);
+        }
+      );
 
       socket.on("notification", ({ success, message, all_voted }) => {
         console.log({ success, message, all_voted });
@@ -222,15 +293,23 @@ const Dashboard = (props) => {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ roomID, userID ]);
+  }, [roomID, userID]);
 
   useEffect(() => {
     // Cleanup function to be run on Unmounting the component
     return () => {
-      // socket.close();
       socket.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    setTimeout(() => {
+      if (showToast) {
+        setShowToast(false);
+        setToastData(null);
+      }
+    }, 3000)
+  }, [showToast]);
 
   // Function to emit Chat messages to Socket IO
   const emitChatMessages = () => {
@@ -240,6 +319,32 @@ const Dashboard = (props) => {
       name: guestName,
       message: message,
     });
+  };
+
+  // Fetch Scores
+  const fetchScores = async (all_voted) => {
+    try {
+      console.log("Fetch scores of players");
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/song/fetch-players-scores`,
+        {
+          room_id: roomID,
+        }
+      );
+      if (response.status === 200) {
+        console.log(response.data);
+        setScoresData(response.data.scoreData);
+        setShowScoreboard(true); // Show scoreboard
+      }
+      // check votes to display scoreboard
+      // then fetch new song if exists, or display exiyt room option
+    } catch (error) {
+      if (error.response) {
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
+    }
   };
 
   // Function to add songs to the list
@@ -264,17 +369,23 @@ const Dashboard = (props) => {
         }
       );
       if (response.status === 200) {
-        console.log(response);
-        fetchSongs(roomID,userID);
+        fetchSongs(roomID, userID);
         socket.emit("add_songs", {
           name: guestName,
           new_song: songLink,
         });
-        Swal.fire({
-          icon: "success",
+        setToastData({
           title: "Success",
-          text: response.data.message,
+          message: response.data.message,
+          type: "success",
+          time: new Date(),
         });
+        setShowToast(true);
+        // Swal.fire({
+        //   icon: "success",
+        //   title: "Success",
+        //   text: response.data.message,
+        // });
         // Reset song input data to empty
         setSongLink("");
         return;
@@ -322,8 +433,7 @@ const Dashboard = (props) => {
           }
         );
         if (response.status === 200) {
-          console.log(response);
-          fetchSongs(roomID,userID);
+          fetchSongs(roomID, userID);
           Swal.fire("Success", response.data.message, "success");
           return;
         }
@@ -348,9 +458,8 @@ const Dashboard = (props) => {
   const handleStartGame = async (e) => {
     e.preventDefault();
     try {
-      console.log('start game')
+      console.log("start game");
       if (userID === roomDetails.host_id) {
-        console.log('start game2')
         // Fetch all users data and check if they have added atleast 3 songs for now
         // emit roomID to fetch users songCount Details
         socket.emit("request_song_details", { room_id: roomID });
@@ -393,7 +502,7 @@ const Dashboard = (props) => {
       }
     }
   };
-  
+
   const checkRoomSongCount = async (room_id) => {
     try {
       console.log("checkRoomSongCount function");
@@ -401,46 +510,47 @@ const Dashboard = (props) => {
         `${DATA_URL}/playlist/api/song//get-room-songs`,
         { room_id }
       );
-      
+
       if (response.status === 200) {
         console.log(response);
         if (response.data.songsCount === 0) {
           // setGameStatus('end');
-          alert('Game Ended');
+          alert("Game Ended");
         } else {
           console.log("call fetch roomSongs function");
-          handleDeleteRoomSong(currentSong._id);
+          handleDeleteRoomSong(currentSongID);
           console.log("call fetch roomSongs function");
           handlePickRandomSong(roomID);
         }
       }
-
-    } catch(error) {
+    } catch (error) {
       if (error.response) {
         console.log(error.response);
       } else {
         console.log(error);
       }
     }
-  }
+  };
   // delete song after everyone votes
   const handleDeleteRoomSong = async (song_id) => {
-    try{
+    try {
       console.log("handleDeleteRoomSong function");
-      const response = await axios.post(`${DATA_URL}/playlist/api/song/delete-song`, { song_id });
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/song/delete-song`,
+        { song_id }
+      );
 
       if (response.status === 200) {
         console.log(response);
       }
-
-    } catch(error) {
+    } catch (error) {
       if (error.response) {
         console.log(error.response);
       } else {
         console.log(error);
       }
     }
-  }
+  };
   // pick using node js and socket io
   const handlePickRandomSong = async (room_id) => {
     try {
@@ -451,16 +561,24 @@ const Dashboard = (props) => {
       );
       if (response.status === 200) {
         console.log(response);
-        setCurrentSong(response.data.randomSong);
         // emit event to socketIO
         socket.emit("send-random-song", {
-          room_id: roomID,
           song_details: response.data.randomSong,
+        });
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: response.data.message,
         });
       }
     } catch (error) {
       if (error.response) {
         console.log(error.response);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: error.response.data.message,
+        });
       } else {
         Swal.fire({
           icon: "error",
@@ -481,24 +599,24 @@ const Dashboard = (props) => {
         });
         return;
       }
-      
+
       console.log("handleVotingPlayer function");
       const response = await axios.post(
         `${DATA_URL}/playlist/api/song/vote-player`,
         {
           room_id: roomID,
-          song_id,
+          song_id: song_id,
           voted_player_id,
           player_id: userID,
         }
       );
       if (response.status === 200) {
         console.log(response);
-        socket.emit("player-vote", {
-          song_details: {
-            song_id: response.data.voteData.song_id,
-            voted_player_id: response.data.voteData.voted_player_id,
-          },
+        // setVotedPlayer(votedPlayer.push(userID));
+        // Fetch votes for current song from backend using socket io by everyone
+        await socket.emit("player-vote", {
+          song_id: song_id,
+          voted_player_id: voted_player_id,
         });
       }
     } catch (error) {
@@ -512,18 +630,18 @@ const Dashboard = (props) => {
 
   const handleTakingVotes = async (e) => {
     e.preventDefault();
-    if (!currentSong || currentSong === null) {
+    console.log(allPlayersVoted);
+    console.log("allPlayersVoted");
+    if (!allPlayersVoted) {
       Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Fetch a song to vote."
+        icon: "warning",
+        title: "Oops...!!!",
+        text: "All Player have not voted.",
       });
-      return;
     }
-    socket.emit("check-votes", { room_id: roomID, song_id: currentSong._id });
+    await socket.emit("check-votes", { allPlayersVoted });
     // Delete this song and their votes data from DB
-  }
-
+  };
 
   return (
     <div className='main-container'>
@@ -534,10 +652,14 @@ const Dashboard = (props) => {
         promptMessage='Are you sure, you want to leave the room?'
         userInfo={props.userInfo.data}
       />
+
+      {/* <button onClick={() => setNotifyData({ title: "Success", message: "This is a test message...!!!" })}>test</button> */}
+
       <PlayerDashboard
         GameStatus={GameStatus}
         roomID={roomID}
         hostName={hostName}
+        hostProfilePic={hostProfilePic}
         roomDetails={roomDetails}
         roomPlayers={roomPlayers}
         songLink={songLink}
@@ -550,17 +672,57 @@ const Dashboard = (props) => {
         onClickRemoveSong={handleDeleteSong}
         // onClickRemoveSong={(e, song_id) => handleDeleteSong(e, song_id)}
         onClickStartGame={handleStartGame}
-        />
+      />
 
       <GameRoom
         GameStatus={GameStatus}
         roomDetails={roomDetails}
         roomPlayers={roomPlayers}
+        currentSongID={currentSongID}
         currentSong={currentSong}
-        onClickFetchSong={(e) => {e.preventDefault();handlePickRandomSong(roomID);}}
+        onClickFetchSong={(e) => {
+          e.preventDefault();
+          handlePickRandomSong(roomID);
+        }}
         handleTakingVotes={handleTakingVotes}
         handleVotingPlayer={handleVotingPlayer}
       />
+
+      {/* <ToastContainer position="top-end" className="p-3 mt-5"> */}
+      <ToastContainer style={{ position: "fixed", top: "60px", right: "10px" }}>
+        {toastData !== null && (
+          <Toast
+            style={{
+              transition: "all ease-in 0.5s",
+              border: "1px solid rgb(100,100,100)",
+              boxShadow: "5px 5px 10px #fff",
+              backgroundColor: toastData.type === "success"
+                ? "rgb(70,245,117)"
+                : toastData.type === "error"
+                ? "rgb(251,83,83)"
+                : toastData.type === "warning"
+                ? "rgb(243,240,88)"
+                : "rgb(83,243,216)"
+            }}
+            show={showToast}
+            onClose={() => {
+              setShowToast(false);
+              setToastData(null);
+            }}
+          >
+            <Toast.Header>
+              <img
+                src='holder.js/20x20?text=%20'
+                className='rounded me-2'
+                alt=''
+              />
+              <strong className='me-auto'>{toastData.title}</strong>
+              {/* <small className="text-muted">{moment(toastData.time).startOf('minutes').fromNow()}</small> */}
+            </Toast.Header>
+            <Toast.Body>{toastData.message}</Toast.Body>
+          </Toast>
+        )}
+      </ToastContainer>
 
       <FloatingTextBlock
         textMessages={chatBoxData}

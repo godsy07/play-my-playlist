@@ -13,6 +13,9 @@ const UserSchema = new mongoose.Schema(
       unique: true,
       required: true,
     },
+    profile_pic_url: {
+      type: String,
+    },
     activation: {
       type: Boolean,
       default: false,
