@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React from "react";
 import {
   Container,
   Row,
@@ -10,48 +10,26 @@ import {
 } from "react-bootstrap";
 
 import AvatarIcon from "../../components/AvatarIcon/AvatarIcon";
-import {
-  FaPlay,
-  FaMusic,
-} from "react-icons/fa";
+import { FaPlay, FaMusic } from "react-icons/fa";
 import { FiRefreshCcw } from "react-icons/fi";
 import { MdWhereToVote } from "react-icons/md";
 import musicImage from "../../images/chatroomimg.png";
 
 import "./game-room.styles.css";
 
-const GameRoom = (
-  {
-    GameStatus,
-    roomDetails,
-    roomPlayers,
-    currentSong,
-    onClickFetchSong,
-    handleTakingVotes,
-    handleVotingPlayer,
-  },
-  ref
-) => {
-  // if (notification) {
-  //  <NotifyToastContainer title="Godson" message='This message is for Godson' type='success' />
-  // }
-  // const ShowError = () => {
-  //   render(<NotifyToastContainer title="Godson" message='This message is for Godson' type='success' />);
-  //   // render(<ToastNotification title='HRMS' body='ERROR!' color='red' />);
-  // };
-
-  // test("it expands when the button is clicked",() => {
-  //   render(<Button>Hello, Test button</Button>)
-  // });
+const GameRoom = ({
+  GameStatus,
+  roomDetails,
+  roomPlayers,
+  currentSongID,
+  currentSong,
+  onClickFetchSong,
+  handleTakingVotes,
+  handleVotingPlayer,
+}) => {
 
   return (
     <>
-      {/* <button onClick={() => ShowError()}>Click on me</button> */}
-      {/* <button onClick={() => setNotification(!notification)}>Click on me</button> */}
-
-      {/* <NotifyToastContainer title="Godson" message='This message is for Godson' type='success' />
-      <NotifyToastContainer title="Godson" message='This message is for Godson' type='error' />
-      <NotifyToastContainer title="Godson" message='This message is for Godson' type='warning' /> */}
 
       <div
         className={`${
@@ -118,7 +96,6 @@ const GameRoom = (
               >
                 {/* <FaCloudDownloadAlt /> */}
                 <FiRefreshCcw
-                  ref={ref}
                   onClick={onClickFetchSong}
                   title='Fetch random song'
                 />
@@ -171,7 +148,7 @@ const GameRoom = (
                 </InputGroup.Text>
                 <Form.Control
                   type='text'
-                  value={currentSong !== null ? currentSong.song : ""}
+                  value={currentSong !== '' ? currentSong : ""}
                   disabled
                 />
                 <InputGroup.Text className='px-1'>
@@ -202,7 +179,7 @@ const GameRoom = (
                       onClick={(e) =>
                         handleVotingPlayer(
                           e,
-                          currentSong !== null ? currentSong._id : undefined,
+                          currentSongID,
                           player.user_id
                         )
                       }
@@ -224,7 +201,8 @@ const GameRoom = (
                       <MdWhereToVote />
                     </Button>
                     <AvatarIcon
-                      imageUrl='https://robohash.org/32?set=set2'
+                      imageUrl={player.profile_pic_url}
+                      // imageUrl='https://robohash.org/32?set=set2'
                       AvatarWidth='180'
                       // streamButtons={true}
                       // streamData={streamVideo}
@@ -235,7 +213,7 @@ const GameRoom = (
                     />
                   </div>
                   <div>
-                    {player.name} {player.song_details && "has voted."}
+                    {player.name.split(" ")[0]} {player.song_details && "has voted."}
                   </div>
                 </div>
               </Col>
@@ -247,4 +225,4 @@ const GameRoom = (
   );
 };
 
-export default forwardRef(GameRoom);
+export default GameRoom;

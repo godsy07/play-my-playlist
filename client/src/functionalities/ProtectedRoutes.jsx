@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Redirect, Route, useHistory } from "react-router-dom";
 import axios from "axios";
 import { DATA_URL } from "../index";
-import Swal from "sweetalert2";
 import { useCookies } from "react-cookie";
 import LoadingSpinner from "../components/layouts/LoadingSpinner/LoadingSpinner";
 
@@ -31,9 +30,10 @@ function ProtectedRoute({ component: Component, ...restOfProps }) {
       setUserInfo(response.data);
       setIsLoaded(true);
     } catch (err) {
-      console.log(err);
       if (err.response) {
         console.log(err.response);
+      } else {
+        console.log(err);
       }
       setIsLoaded(true);
     }

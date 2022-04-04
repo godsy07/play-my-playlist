@@ -1,6 +1,6 @@
-import React ,{ useState, useEffect,useRef } from "react";
+import React ,{ useState } from "react";
 import { Link ,useHistory} from "react-router-dom";
-import { Container, Row, Col, Button, Form,Accordion } from "react-bootstrap";
+import { Container, Button, Form,Accordion } from "react-bootstrap";
 import axios from "axios";
 import { DATA_URL } from "../../index";
 import Swal from "sweetalert2";

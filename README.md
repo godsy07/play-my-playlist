@@ -1,5 +1,7 @@
 # Play My PlayList App
 
+Node JS 16.13.1
+
 To run the project, clone it in your PC,
 
 ```

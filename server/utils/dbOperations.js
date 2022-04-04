@@ -12,18 +12,10 @@ const playerJoinRoom = async (user_id, room_id) => {
 const deletePlayer = async (user_id, room_id) => {
   try {
     const roomInfo = await RoomModel.findOne({ room_id });
-
-    let players = roomInfo.players;
-    const index = players.findIndex((player) => player === user_id);
-    players.splice(index, 1)[0];
-    
-    const updatedRoom = await RoomModel.findOneAndUpdate({ room_id }, {$set:{ players }}, { new: true });
-    console.log('updated room');
-    console.log(updatedRoom);
     
     let deletedData;
-    deletedData = await ScorePointModel.deleteMany({ room_id, player_id: user_id });
-    console.log('deleted score points');
+    // deletedData = await ScorePointModel.deleteMany({ room_id, player_id: user_id });
+    // console.log('deleted score points');
     console.log(deletedData);
     deletedData = await SongModel.deleteMany({ room_id, player_id: user_id });
     console.log('deleted songs');

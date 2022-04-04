@@ -3,12 +3,10 @@ import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 import HomePage from "./pages/HomePage/HomePage";
 import LoginSignUp from "./pages/LoginSignUp/LoginSignUp";
 import CreateRoom from "./pages/CreateRoom/CreateRoom";
-import PlayerDashboard from "./pages/PlayerDashboard/PlayerDashboard";
 import JoinRoom from "./pages/JoinRoom/JoinRoom";
 import NotFoundPage from "./pages/NotFoundPage";
 import ProtectedRoute from "./functionalities/ProtectedRoutes";
 import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
-import GameRoom from "./pages/GameRoom/GameRoom";
 import UserSettings from "./pages/UserSettings/UserSettings";
 import Dashboard from "./pages/Dashboard/Dashboard";
 

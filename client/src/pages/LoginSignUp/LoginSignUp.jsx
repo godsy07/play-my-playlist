@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useHistory } from "react-router-dom";
-import ReactCSSTransitionGroup from "react-transition-group";
 import axios from "axios";
 import { DATA_URL } from "../../index";
 import Swal from "sweetalert2";
-import { Container, Row, Col, Button, Form } from "react-bootstrap";
+import { Row, Col, Button, Form } from "react-bootstrap";
 import { useCookies } from "react-cookie";
 
 import "./login-signup.styles.css";
@@ -24,7 +23,19 @@ const LoginSignUp = (props) => {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  
+  const [activateEmail, setActivateEmail] = useState("");
+  const [activatePassCode, setActivatePassCode] = useState("");
 
+  const [activateAccount, setActivateAccount] = useState(false);
+  const [sentPassCode, setsentPassCode] = useState(false);
+  const [height, setHeight] = useState(0);
+  const [signupHeight, setSignupHeight] = useState(0);
+  const [loginHeight, setLoginHeight] = useState(0);
+  const activateRef = useRef(null);
+  const signupRef = useRef(null);
+  const loginRef = useRef(null);
+  const testRef = useRef(null);
   // Load SignUp or Login page on mounting
   useEffect(() => {
     checkValidToken();
@@ -117,16 +128,13 @@ const LoginSignUp = (props) => {
         Swal.fire({
           icon: "success",
           title: "Success",
-          text: "You have been successfully signed up.",
-        });
-        history.push("/");
-        return;
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Oops..",
           text: response.data.message,
+          // text: "You have been successfully signed up.",
         });
+        setActivateAccount(true);
+        setHeight(activateRef.current.clientHeight);
+        setsentPassCode(true);
+        // history.push("/");
         return;
       }
     } catch (error) {
@@ -146,6 +154,10 @@ const LoginSignUp = (props) => {
       }
     }
   };
+
+  // const handleVerifyPassCode = (e) => {
+  //   e.preventDefault();
+  // }
   // handleCreateUser to submit room data when create Room button is clicked
   const handleCreateUser = (e) => {
     e.preventDefault();
@@ -201,7 +213,7 @@ const LoginSignUp = (props) => {
             message: "You have successfully logged in to your account.",
           },
         });
-        // history.push("/");
+        history.push("/");
         return;
       } else {
         Swal.fire({
@@ -238,8 +250,100 @@ const LoginSignUp = (props) => {
     }
   };
 
+  const handleResendPassCode = async (e) => {
+    e.preventDefault();
+    if (activateEmail.length === 0) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Please enter email to continue",
+      });
+      return;
+    }
+    try {
+      const response = await axios.post(`${DATA_URL}/playlist/api/user/resend-passcode`, {
+        email: activateEmail,
+      });
+
+      if (response.status === 200) {
+        console.log(response);
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: response.data.message,
+        });
+        setsentPassCode(true);
+        // Open send PassCode Tab
+        return;
+      }
+
+    } catch(error) {
+      if (error.response) {
+        console.log(error.response);
+        Swal.fire({
+          icon: "error",
+          title: "Oops..",
+          text: error.response.data.message,
+        });
+      } else {
+        console.log(error);
+        Swal.fire({
+          icon: "error",
+          title: "Oops..",
+          text: "Something went wrong.",
+        });
+      }
+    }
+  }
+
+  const handleVerifyPassCode = async (e) => {
+    e.preventDefault();
+    if (activatePassCode.length === 0) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Please enter passcode sent to your email ID",
+      });
+      return;
+    }
+    try {
+      const response = await axios.post(`${DATA_URL}/playlist/api/user/verify-passcode`, {
+        email: activateEmail,
+        pass_code: activatePassCode,
+      });
+
+      if (response.status === 200) {
+        console.log(response);
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: response.data.message,
+        });
+        // Open send PassCode Tab
+        return;
+      }
+
+    } catch(error) {
+      if (error.response) {
+        console.log(error.response);
+        Swal.fire({
+          icon: "error",
+          title: "Oops..",
+          text: error.response.data.message,
+        });
+      } else {
+        console.log(error);
+        Swal.fire({
+          icon: "error",
+          title: "Oops..",
+          text: "Something went wrong.",
+        });
+      }
+    }
+  }
+
   return (
-    <main classname="p-0 m-0">
+    <main className='p-0 m-0'>
       <Row md={2} xs={1} style={{ minHeight: "100vh" }}>
         <Col className='bg-warning d-flex flex-column justify-content-center align-items-center form-divcolumnsignup'>
           <div
@@ -247,52 +351,118 @@ const LoginSignUp = (props) => {
               signUpShow ? "d-flex" : "d-none"
             } flex-column w-100 m-4 p-5 form-space`}
           >
-            <h3>SignUp Form</h3>
-            <Form.Group className='mb-2'>
-              <Form.Label>Enter your Name</Form.Label>
-              <Form.Control
-                type='text'
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-              />
-            </Form.Group>
-            {/* <Form.Group className='mb-2'>
-              <Form.Label>Choose a your Username</Form.Label>
-              <Form.Control
-                type='text'
-                // value={userName}
-                // onChange={(e) => setUserName(e.target.value)}
-              />
-            </Form.Group> */}
-            <Form.Group className='mb-2'>
-              <Form.Label>Enter your EmailID</Form.Label>
-              <Form.Control
-                type='email'
-                value={userEmail}
-                onChange={(e) => setUserEmail(e.target.value)}
-              />
-            </Form.Group>
-            <Form.Group className='mb-2'>
-              <Form.Label>Set up your password</Form.Label>
-              <Form.Control
-                type='password'
-                value={userPassword}
-                onChange={(e) => setUserPassword(e.target.value)}
-              />
-            </Form.Group>
-            <Form.Group className='mb-2'>
-              <Form.Label>Confirm your password</Form.Label>
-              <Form.Control
-                type='password'
-                value={confirmUserPassword}
-                onChange={(e) => setConfirmUserPassword(e.target.value)}
-              />
-            </Form.Group>
-            <Form.Group className='mb-2'>
-              <Button className='rounded-pill' onClick={handleCreateUser}>
-                Submit Details
-              </Button>
-            </Form.Group>
+            <Row
+              ref={activateRef}
+              className={`${activateAccount ? "d-none" : "d-flex"}`}
+            >
+              <Col>
+              {/* <Col lg={8}> */}
+                <h3>SignUp Form</h3>
+
+                <Form.Group className='mb-2'>
+                  <Form.Label>Enter your Name</Form.Label>
+                  <Form.Control
+                    type='text'
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                  />
+                </Form.Group>
+                <Form.Group className='mb-2'>
+                  <Form.Label>Enter your EmailID</Form.Label>
+                  <Form.Control
+                    type='email'
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                  />
+                </Form.Group>
+                <Form.Group className='mb-2'>
+                  <Form.Label>Set up your password</Form.Label>
+                  <Form.Control
+                    type='password'
+                    value={userPassword}
+                    onChange={(e) => setUserPassword(e.target.value)}
+                  />
+                </Form.Group>
+                <Form.Group className='mb-2'>
+                  <Form.Label>Confirm your password</Form.Label>
+                  <Form.Control
+                    type='password'
+                    value={confirmUserPassword}
+                    onChange={(e) => setConfirmUserPassword(e.target.value)}
+                  />
+                </Form.Group>
+                <Form.Group className='mb-2'>
+                  <Button className='rounded-pill' onClick={handleCreateUser}>
+                    Submit Details
+                  </Button>
+                </Form.Group>
+              </Col>
+              {/* <Col lg={4} className='d-flex flex-column justify-content-center'>
+                Submitted Details?
+                <Button
+                  className='rounded-pill'
+                  onClick={() => {
+                    setActivateAccount(true);
+                    setHeight(activateRef.current.clientHeight);
+                  }}
+                >
+                  Activate Account
+                </Button>
+              </Col> */}
+            </Row>
+            <div
+              ref={testRef}
+              className={`${!activateAccount ? "d-none" : "d-flex"} flex-column`}
+              style={{ height: height }}
+            >
+              <h2>Activate your Account</h2>
+              <Col className={`${sentPassCode ? "d-none" : "d-block" }`}>
+                <Form.Group className='mb-2'>
+                  <Form.Label>Enter your Email ID:</Form.Label>
+                  <Form.Control
+                    type='email'
+                    value={activateEmail}
+                    onChange={(e) => setActivateEmail(e.target.value)}
+                    />
+                </Form.Group>
+                <Form.Group className='mb-2'>
+                  <Button className='rounded-pill' onClick={handleResendPassCode}>Send PassCode</Button>
+                </Form.Group>
+                <Form.Group className='mb-2'>
+                  <Form.Label>Already have PassCode?</Form.Label>
+                  <Button className='rounded-pill ms-1' onClick={() => setsentPassCode(true)}>Click Here</Button>
+                </Form.Group>
+              </Col>
+              <Col className={`${!sentPassCode ? "d-none" : "d-block" }`}>
+                <Form.Group className='mb-2'>
+                  <Form.Label>Enter your Email ID:</Form.Label>
+                  <Form.Control
+                    type='email'
+                    value={activateEmail}
+                    onChange={(e) => setActivateEmail(e.target.value)}
+                    />
+                </Form.Group>
+                <Form.Group className='mb-2'>
+                  <Form.Label>Enter PassCode:</Form.Label>
+                    <Form.Control
+                      type='number'
+                      value={activatePassCode}
+                      onChange={(e) => setActivatePassCode(e.target.value)}
+                    />
+                </Form.Group>
+                <Form.Group className='mb-2'>
+                  <Button className='rounded-pill' onClick={handleVerifyPassCode}>Submit PassCode</Button>
+                </Form.Group>
+                <Form.Group className='mb-2'>
+                  <Form.Label>Do not have PassCode?</Form.Label>
+                  <Button className='rounded-pill ms-1' onClick={() => setsentPassCode(false)}>Click Here</Button>
+                </Form.Group>
+              </Col>
+                <Form.Group className='mb-2'>
+                  <Form.Label>Signup with your Details?</Form.Label>
+                  <Button className='rounded-pill ms-1' onClick={() => setActivateAccount(false)}>Click Here</Button>
+                </Form.Group>
+            </div>
           </div>
           <div
             className={`${
@@ -370,6 +540,22 @@ const LoginSignUp = (props) => {
             >
               Go to Login
             </Button>
+            <Form.Group className="mt-2">
+              <Form.Label>Submitted Details?</Form.Label>
+              {/* </Form.Group>
+              <Form.Group> */}
+              <Button
+                className='rounded-pill ms-1'
+                onClick={() => {
+                  if (!activateAccount) {
+                    setActivateAccount(true);
+                    setHeight(activateRef.current.clientHeight);
+                  }
+                }}
+              >
+                Activate Account
+              </Button>
+            </Form.Group>
             <p className='mt-4'>
               Go to{" "}
               <Link to='/'>

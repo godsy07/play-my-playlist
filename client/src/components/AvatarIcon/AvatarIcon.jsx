@@ -11,6 +11,7 @@ import {
 // import { FaRegCheckCircle } from "react-icons/fa";
 import { BiWifiOff } from "react-icons/bi";
 
+import userProfilePic from "../../images/user/user-profile.png";
 import "./avatar-icon.styles.css";
 import { IoChatbubbleEllipsesOutline } from "react-icons/io5";
 
@@ -62,7 +63,7 @@ const AvatarIcon = ({
           height={`${AvatarWidth}px`}
           width={`${AvatarWidth}px`}
           alt='profile-image'
-          src={imageUrl}
+          src={imageUrl ? imageUrl : userProfilePic }
           className='avatar-icon'
           roundedCircle
         />
