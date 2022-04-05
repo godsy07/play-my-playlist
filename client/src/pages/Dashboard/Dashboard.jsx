@@ -169,7 +169,7 @@ const Dashboard = (props) => {
 
       if (response.status === 200) {
         let allVoted = true;
-        room_users.map((user) => {
+        room_users.forEach((user) => {
           // turn userLeft to true, if someone has not voted (i.e. their vote data does not exist in response)
           if (
             !response.data.votedData.find(

@@ -15,7 +15,7 @@ import Swal from "sweetalert2";
 
 const HomePage = () => {
   let history = useHistory();
-  const [cookie, removeCookie] = useCookies(["playlist_token"]);
+  const [removeCookie] = useCookies(["playlist_token"]);
   const positionValue = [0, 16]; // postion left and top, in vw and vh respectively
   const paddingValue = [10, 5, 10, 5]; // top, right, bottom, left in pixels
   const borderRadiusValue = [0, 20, 20, 0]; // left top, right top, right bottom, left bottom in pixels

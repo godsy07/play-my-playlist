@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useEffect } from "react";
+import React, { forwardRef } from "react";
 import logo from "../../../images/PMPL-LOGO.png";
 import { Link, useHistory } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -14,7 +14,8 @@ const MainHeaderDiv = (
   ref
 ) => {
   const history = useHistory();
-  const [cookie, removeCookie] = useCookies(["playlist_token"]);
+  const [removeCookie] = useCookies(["playlist_token"]);
+  // const [cookie, removeCookie] = useCookies(["playlist_token"]);
   const promptCall = (path) => {
     Swal.fire({
       title: promptMessage,

@@ -10,7 +10,7 @@ import "./login-signup.styles.css";
 
 const LoginSignUp = (props) => {
   const history = useHistory();
-  const [cookie, setCookie] = useCookies();
+  const [setCookie] = useCookies();
   // State to show signup form if true
   // console.log(props.location.state.signUp);
   const [signUpShow, setSignUpShow] = useState(null);
@@ -30,11 +30,7 @@ const LoginSignUp = (props) => {
   const [activateAccount, setActivateAccount] = useState(false);
   const [sentPassCode, setsentPassCode] = useState(false);
   const [height, setHeight] = useState(0);
-  const [signupHeight, setSignupHeight] = useState(0);
-  const [loginHeight, setLoginHeight] = useState(0);
   const activateRef = useRef(null);
-  const signupRef = useRef(null);
-  const loginRef = useRef(null);
   const testRef = useRef(null);
   // Load SignUp or Login page on mounting
   useEffect(() => {
