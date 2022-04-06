@@ -42,19 +42,20 @@ let corsOptions = {
   methods: ["GET", "PUT", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
-  preflightContinue: false,
+  preflightContinue: true,
   optionsSuccessStatus: 200,
 };
 
 app.use(logger); // Middleware to log in the server console
 app.use(cors(corsOptions));
+app.use(express.json());
 app.use(
   express.urlencoded({
     extended: true,
   })
 );
-app.use(express.json());
 app.use(cookieParser());
+app.use(express.static('public'));
 
 app.use("/playlist/api/user", userInfo);
 app.use("/playlist/api/room", roomInfo);

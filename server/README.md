@@ -34,3 +34,4 @@ It uses the following tools:<br/>
 - [bcryptjs](https://github.com/dcodeIO/bcrypt.js)
 - [JWT](https://github.com/auth0/node-jsonwebtoken)
 - [Socket.io](https://socket.io/docs/v4/server-installation/)
+- [Multer](https://github.com/expressjs/multer)

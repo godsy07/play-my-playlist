@@ -47,7 +47,7 @@ const Dashboard = (props) => {
   const [roomPlayers, setRoomPlayers] = useState([]);
   const [hostName, setHostName] = useState("");
   const [hostID, setHostID] = useState("");
-  const [hostProfilePic, sethHostProfilePic] = useState("");
+  const [hostProfilePic, setHostProfilePic] = useState(null);
   const [guestName, setGuestName] = useState("");
   const [roomDetails, setRoomDetails] = useState(null); // For room Details to be saved
   const [message, setMessage] = useState("");
@@ -73,11 +73,11 @@ const Dashboard = (props) => {
   const setUserDetails = () => {
     // Set userID, UserName/GuestName, RoomID
     const room_id = props.location.search.split("=")[1];
-    setUserID(props.userInfo.data.id);
-    setGuestName(props.userInfo.data.user_name);
+    setUserID(props.userInfo._id);
+    setGuestName(props.userInfo.name);
     setRoomID(room_id);
     fetchRoomDetails(room_id);
-    fetchSongs(room_id, props.userInfo.data.id);
+    fetchSongs(room_id, props.userInfo._id);
   };
 
   // Function to fetch room Details
@@ -89,11 +89,12 @@ const Dashboard = (props) => {
         { room_id }
       );
       if (response.status === 200) {
+        console.log(response);
         setRoomDetails(response.data.roomDetails);
-        setHostName(response.data.host_name);
-        setHostID(response.data.host_id);
+        setHostName(response.data.hostDetails.name);
+        setHostID(response.data.hostDetails._id);
         // set host profile pic
-        // setHostProfilePic()
+        setHostProfilePic(DATA_URL +"/"+ response.data.hostDetails.profile_pic_url);
       } else {
         console.log(response.data.message);
         Swal.fire({
@@ -156,6 +157,7 @@ const Dashboard = (props) => {
       }
     }
   };
+  
   const fetchVotedPlayers = async (room_id, song_id, room_users) => {
     try {
       console.log("fetchVotedPlayers");
@@ -650,7 +652,7 @@ const Dashboard = (props) => {
         routeName='Home'
         redirectPromt={true}
         promptMessage='Are you sure, you want to leave the room?'
-        userInfo={props.userInfo.data}
+        userInfo={props.userInfo}
       />
 
       {/* <button onClick={() => setNotifyData({ title: "Success", message: "This is a test message...!!!" })}>test</button> */}

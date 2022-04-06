@@ -1,7 +1,8 @@
 const Joi = require("joi");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const moment = require("moment");
+const fs = require("fs");
+
 const UserModel = require("../model/userModel");
 const verifyPasswordModel = require("../model/verifyPasswordModel");
 const { nodemailerTransporter } = require("../config/nodemail");
@@ -71,12 +72,10 @@ const createUser = async (req, res) => {
       let verifyUser = await verifyUserSignup(email, name);
       // console.log(verifyUser);
       if (verifyUser.error) {
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Something unexpected error occurred",
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Something unexpected error occurred",
+        });
       }
       // Data is being stored in DB
       const data = await UserModel.create(userInfo);
@@ -84,12 +83,10 @@ const createUser = async (req, res) => {
       verifyUser = await verifyUserSignup(email, name);
       // console.log(verifyUser);
       if (verifyUser.error) {
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Something unexpected error occurred",
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Something unexpected error occurred",
+        });
       }
 
       message = "Verification passcode sent through email";
@@ -124,29 +121,25 @@ const resendPassCode = async (req, res) => {
     }
     // Add data to database if does not exist already
     let userData = await UserModel.find({ email });
-    
+
     if (userData.length === 0) {
       message = "User does not exist";
     } else {
       if (userData[0].activation) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "User has already been activated",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "User has already been activated",
+        });
       }
       let name = userData[0].name;
       // send verify passcodes to email
       verifyUser = await verifyUserSignup(email, name);
       // console.log(verifyUser);
       if (verifyUser.error) {
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Something unexpected error occurred",
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Something unexpected error occurred",
+        });
       }
 
       message = "Verification passcode sent through email";
@@ -180,12 +173,10 @@ const verifyPassCode = async (req, res) => {
 
     let verifyUserData = await verifyPasswordModel.find({ user_email: email });
     if (verifyUserData.length === 0) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Please get pass code to activate your account",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Please get pass code to activate your account",
+      });
     }
 
     if (pass_code !== verifyUserData[0].pass_code) {
@@ -385,61 +376,94 @@ const forgotPassword = async (req, res) => {
     return res.status(500).json({ success: false, message });
   }
 };
+
 //userSettings
-const userSettings = async (req, res) => {
-  const { user_id, email, newpassword, oldpassword } = req.body;
-  let message = "";
+const userProfileEdit = async (req, res) => {
+  const { user_id, new_password, old_password, confirm_new_password } =
+    req.body;
+  const profilePic = req.file;
+  let message = "",
+    profile_pic_url = null;
+  // let file_location = "";
+  if (profilePic) {
+    //   // Upload the image and save it in the db
+    profile_pic_url = profilePic.destination + "/" + profilePic.filename;
+    // profile_pic_url = profilePic.path;
+  }
+
   // Schema defination for Validation of details recieved
   const schema = Joi.object({
-    email: Joi.string().email().required(),
-    oldpassword: Joi.string()
-      .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
-      .min(6)
-      .required(),
-    newpassword: Joi.string()
-      .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
-      .min(6)
-      .required(),
+    user_id: Joi.string().required().label("User ID"),
+    old_password: Joi.string().min(6).required().label("Old Password"),
+    new_password: Joi.string().min(6).required().label("New Password"),
+    confirm_new_password: Joi.any()
+      .valid(Joi.ref("new_password"))
+      .required()
+      .label("Confirm Password"),
   });
   // Validation of details recieved starts here
-  const validate = schema.validate({ email, oldpassword, newpassword });
+  const validate = schema.validate({
+    user_id,
+    new_password,
+    old_password,
+    confirm_new_password,
+  });
   const { error } = validate;
   if (error) {
     message = error.details[0].message;
+    if (profilePic) {
+      fs.unlinkSync(profilePic.path);
+    }
     return res.status(400).json({ success: false, message });
   }
 
-  // Testing STARTS here
+  // Fetch and update the data
   try {
-    const user = await UserModel.findOne({ email }).select("+password");
+    const user = await UserModel.findOne({ _id: user_id }).select("+password");
     // If user does not exist
     if (!user) {
-      message = "Account does not exist with this emailID.";
-      return res.status(401).json({ success: false, message });
+      fs.unlinkSync(profilePic.path);
+      message = "Account you are looking for does not exist.";
+      return res.status(400).json({ success: false, message });
     }
-    const isMatch = await user.matchPassword(oldpassword);
+
+    if (user.profile_pic_url !== null && profile_pic_url !== null) {
+      // fs.unlinkSync(user.profile_pic_url);
+    }
+    
+    let updatedData = null;
+    const isMatch = await user.matchPassword(old_password);
     if (!isMatch) {
+      fs.unlinkSync(profilePic.path);
       message = "You have entered old password is wrong.";
       return res.status(401).json({ success: false, message });
     }
-    // updating  password
-    const salt = await bcrypt.genSalt(10);
-    const value = await bcrypt.hash(newpassword, salt);
-    const updatedata = await UserModel.updateOne(
-      { email: email },
-      { $set: { password: value } },
-      { new: true }
-    );
-    if (!updatedata) {
-      message = " Reset password is failed.";
+    // If already exist file delete it
+    // updating details
+    if (profile_pic_url === null) {
+      updatedData = await UserModel.update({ _id: user_id },
+        { password: new_password },
+        { new: true }
+      );
+    } else {
+      updatedData = await UserModel.update({ _id: user_id },
+        { password: new_password, profile_pic_url: profilePic.filename },
+        { new: true }
+      );
+    }
+    if (!updatedData) {
+      message = "Could not reset password.";
       return res.status(401).json({ success: false, message });
     }
-    message = "Successfuly updated password.";
-    // res.cookie("playlist_token", token);
-    return res.status(200).json({ success: true, updatedata, message });
+    message = "Successfuly updated user profile.";
+
+    // return res.status(200).json({ success: true, message });
+    return res.status(200).json({ success: true, updatedData, message });
   } catch (error) {
-    message = error._message;
-    return res.status(500).json({ success: false, message });
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Something went wrong in server." });
   }
 };
 
@@ -475,5 +499,5 @@ module.exports = {
   logoutUser,
   getUserDetailsByID,
   forgotPassword,
-  userSettings,
+  userProfileEdit,
 };

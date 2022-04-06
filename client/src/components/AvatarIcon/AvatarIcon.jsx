@@ -60,8 +60,9 @@ const AvatarIcon = ({
         </>
       ) : (
         <Figure.Image
-          height={`${AvatarWidth}px`}
-          width={`${AvatarWidth}px`}
+          // height={`${AvatarWidth}px`}
+          // width={`${AvatarWidth}px`}
+          style={{ height: "100%", width: "100%", border: "1px solid #fff", objectFit: "cover" }}
           alt='profile-image'
           src={imageUrl ? imageUrl : userProfilePic }
           className='avatar-icon'

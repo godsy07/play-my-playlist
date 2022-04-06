@@ -107,7 +107,7 @@ const MainHeaderDiv = (
         {userInfo && (
           <>
             <AvatarIcon
-              imageUrl={userProfilePic}
+              imageUrl={ userInfo && DATA_URL + "/" + userInfo.profile_pic_url }
               // imageUrl='https://robohash.org/34?set=set2'
               AvatarWidth='30'
             />
@@ -119,7 +119,7 @@ const MainHeaderDiv = (
                 id='dropdown-autoclose-true'
               >
                 <em>
-                  <i>{userInfo.user_name.split(" ")[0]}</i>
+                  <i>{userInfo.name.split(" ")[0]}</i>
                 </em>
               </Dropdown.Toggle>
 

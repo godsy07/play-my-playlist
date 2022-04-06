@@ -25,7 +25,7 @@ const CreateRoom = ({ userInfo }) => {
   const [roomID, setRoomID] = useState("");
   const [roomName, setRoomName] = useState("");
   const [passCode, setPassCode] = useState("");
-  const [noOfPlayers, setNoOfPlayers] = useState(1);
+  const [noOfPlayers, setNoOfPlayers] = useState(3);
   const [roomRules, setRoomRules] = useState("");
 
   // States for copy texts
@@ -37,9 +37,9 @@ const CreateRoom = ({ userInfo }) => {
 
   // Room Code set during mount
   useEffect(() => {
-    // console.log(userInfo.data);
-    setUserID(userInfo.data.id);
-    setGuestName(userInfo.data.user_name);
+    // console.log(userInfo);
+    setUserID(userInfo._id);
+    setGuestName(userInfo.name);
     fetchRoomID();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -51,16 +51,20 @@ const CreateRoom = ({ userInfo }) => {
       );
       if (response.status === 200) {
         setRoomID(response.data.roomID);
-      } else {
-        console.log(response);
-        Swal.fire({
-          icon: "error",
-          title: "Oops...",
-          text: "Something went wrong!",
-        });
+        // console.log(response);
+        // Swal.fire({
+        //   icon: "success",
+        //   title: "Success",
+        //   text: response.data.message,
+        // });
       }
+
     } catch (err) {
-      console.log(err);
+      if (err.response) {
+        console.log(err.response);
+      } else {
+        console.log(err);
+      }
     }
   };
 
@@ -120,6 +124,7 @@ const CreateRoom = ({ userInfo }) => {
         `${DATA_URL}/playlist/api/room/create-room`,
         roomData
       );
+
       if (response.status === 200) {
         Swal.fire({
           icon: response.data.status,
@@ -127,20 +132,24 @@ const CreateRoom = ({ userInfo }) => {
           text: response.data.message,
         });
         if (response.data.status === "success") history.push("/joinRoom");
-      } else {
+      }
+
+    } catch (error) {
+      if (error.response) {
+        console.log(error.response);
         Swal.fire({
           icon: "error",
-          title: "Failed",
-          text: "Room could not be created...",
+          title: "Oops...",
+          text: error.response.data.message,
+        });
+      } else {
+        console.log(error);
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Something went wrong!!",
         });
       }
-    } catch (error) {
-      console.log(error);
-      Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Something went wrong!!",
-      });
     }
   };
 
@@ -157,7 +166,7 @@ const CreateRoom = ({ userInfo }) => {
       <MainHeaderDiv
         title='Join Room'
         routeName='joinRoom'
-        userInfo={userInfo.data}
+        userInfo={userInfo}
       />
       <div className='create-room-div'>
         <Container className='pb-1' fluid>
@@ -248,16 +257,10 @@ const CreateRoom = ({ userInfo }) => {
                     value={noOfPlayers}
                     onChange={(e) => setNoOfPlayers(e.target.value)}
                   >
-                    <option value='1'>1</option>
-                    <option value='2'>2</option>
-                    <option value='3'>3</option>
-                    <option value='4'>4</option>
-                    {/* <option value='5'>5</option> */}
-                    {/* <option value='6'>6</option>
-                    <option value='7'>7</option>
-                    <option value='8'>8</option>
-                    <option value='9'>9</option>
-                    <option value='10'>10</option> */}
+                    {/* <option value='1'>1</option>
+                    <option value='2'>2</option> */}
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
                   </Form.Select>
                 </Col>
               </Row>

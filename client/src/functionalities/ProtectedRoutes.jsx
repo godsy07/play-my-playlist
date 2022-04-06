@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Redirect, Route } from "react-router-dom";
 import jwt_decode from "jwt-decode";
 import { useCookies } from "react-cookie";
+
+import axios from "axios";
+import { DATA_URL } from "../index";
 import LoadingSpinner from "../components/layouts/LoadingSpinner/LoadingSpinner";
 
 function ProtectedRoute({ component: Component, ...restOfProps }) {
@@ -18,8 +21,31 @@ function ProtectedRoute({ component: Component, ...restOfProps }) {
   // // API call to check if the token available is valid
   function checkValidToken() {
     var decoded = jwt_decode(cookies.playlist_token);
-    setUserInfo({ data: decoded });
-    setIsLoaded(true);
+    fetchUserData(decoded.id)
+  }
+
+  const fetchUserData = async (user_id) => {
+    try {
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/user/get-user-details`,
+        {
+          user_id,
+        }
+      );
+
+      if (response.status === 200) {
+        setUserInfo(response.data.userInfo);
+        setIsLoaded(true);
+      }
+
+    } catch(error) {
+      if (error.response) {
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
+      setIsLoaded(true);
+    }
   }
 
   if (!isLoaded) {

@@ -11,6 +11,7 @@ import {
 
 import "./player-dashboard.styles.css";
 import PlayInstructionsModal from "../../components/PlayInstructions/PlayInstructions";
+import { DATA_URL } from "../..";
 
 const PlayerDashboard = ({
   GameStatus,
@@ -96,8 +97,7 @@ const PlayerDashboard = ({
                   className='d-flex flex-column align-items-center p-2 m-1 text-center'
                 >
                   <AvatarIcon
-                    imageUrl={item.profile_pic_url}
-                    // imageUrl='https://robohash.org/46?set=set4'
+                    imageUrl={ item.profile_pic_url && DATA_URL +"/"+ item.profile_pic_url }
                     // statusDetails={true}
                     statusDetails='connected'
                     showStatus={true}

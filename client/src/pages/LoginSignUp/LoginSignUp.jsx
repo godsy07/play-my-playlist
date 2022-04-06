@@ -10,7 +10,7 @@ import "./login-signup.styles.css";
 
 const LoginSignUp = (props) => {
   const history = useHistory();
-  const [setCookie] = useCookies();
+  const [cookie, setCookie] = useCookies();
   // State to show signup form if true
   // console.log(props.location.state.signUp);
   const [signUpShow, setSignUpShow] = useState(null);

@@ -87,7 +87,7 @@ const JoinRoom = (props) => {
       let joinData = {
         room_id: roomID,
         password: password,
-        player_id: props.userInfo.data.id,
+        player_id: props.userInfo._id,
       };
       // console.log(joinData);
       const response = await axios.post(
@@ -138,7 +138,7 @@ const JoinRoom = (props) => {
       <MainHeaderDiv
         title='Create Room'
         routeName='CreateRoom'
-        userInfo={props.userInfo.data}
+        userInfo={props.userInfo}
       />
       <div className='join-room-div'>
         <Container className='pb-1' fluid>
