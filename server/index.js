@@ -17,7 +17,7 @@ const {
   removeVotes,
   removeVotedStatus,
 } = require("./utils/users");
-const { deletePlayer, removeVotedSongs } = require("./utils/dbOperations");
+const { deletePlayer, removeVotedSongs, changeUserGameStatus } = require("./utils/dbOperations");
 
 // Accessing dotenv variables
 dotenv.config({ path: "./config/config.env" });
@@ -42,19 +42,20 @@ let corsOptions = {
   methods: ["GET", "PUT", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
-  preflightContinue: false,
+  preflightContinue: true,
   optionsSuccessStatus: 200,
 };
 
 app.use(logger); // Middleware to log in the server console
 app.use(cors(corsOptions));
+app.use(express.json());
 app.use(
   express.urlencoded({
     extended: true,
   })
 );
-app.use(express.json());
 app.use(cookieParser());
+app.use(express.static('public'));
 
 app.use("/playlist/api/user", userInfo);
 app.use("/playlist/api/room", roomInfo);
@@ -92,31 +93,31 @@ io.on("connection", (socket) => {
           songs_list,
           song_count,
         });
-        console.log('join room');
-        console.log(user);
+        // console.log('join room');
+        // console.log(user);
         if (user) {
           // Welcome current user
           socket.join(user.room_id);
           // socket.broadcast.emit('user-connected', user.user_id);
-          // socket.emit(
-          //   "message",
-          //   formatMessages(
-          //     botName,
-          //     null,
-          //     `Welcome to this PlayMyPlayList room, ${user.name}.`
-          //   )
-          // );
+          socket.emit(
+            "message",
+            formatMessages(
+              botName,
+              null,
+              `Welcome to this PlayMyPlayList room, ${user.name}.`
+            )
+          );
           // // Broadcast when any user connects
-          // socket.broadcast
-          //   .to(user.room_id)
-          //   .emit(
-          //     "message",
-          //     formatMessages(
-          //       botName,
-          //       null,
-          //       `${user.name} joined the PlayMyPlayList room.`
-          //     )
-          //   );
+          socket.broadcast
+            .to(user.room_id)
+            .emit(
+              "message",
+              formatMessages(
+                botName,
+                null,
+                `${user.name.split(" ")[0]} joined the PlayMyPlayList room.`
+              )
+            );
         }
         // Send users and room Info
         io.to(user.room_id).emit("roomUsers", {
@@ -153,11 +154,9 @@ io.on("connection", (socket) => {
   socket.on("start_game", () => {
   // socket.on("start_game", ({ room_data, room_players }) => {
     const user = getUser(socket.id);
-    console.log('user outside loop');
-    console.log(user);
     if (user) {
-      console.log('user exists');
-      io.to(user.room_id).emit("gameStatus", {
+      changeUserGameStatus(user.room_id); 
+      io.to(user.room_id).emit("game_status", {
         game_status: true,
         // room_data,
         // room_players,
@@ -171,22 +170,28 @@ io.on("connection", (socket) => {
     const user = getUser(socket.id);
     if (user) {
       // Update user songs list and count function call
-      addUserSong(socket.id, new_song);
       io.to(user.room_id).emit("roomUsers", {
         users: getUsersInRoom(user.room_id),
       });
-      io.to(user.room_id).emit(
-        "message",
-        formatMessages(botName, null, `${name} added new song.`)
-      );
+      io.to(user.room_id).emit("message", formatMessages(botName, null, `${name} added new song.`));
     }
   });
+    socket.on("remove_songs", ({ name }) => {
+      const user = getUser(socket.id);
+      if (user) {
+        // Update user songs list and count function call
+        io.to(user.room_id).emit("roomUsers", {
+          users: getUsersInRoom(user.room_id),
+        });
+        io.to(user.room_id).emit("message", formatMessages(botName, null, `${name} removed a song.`));
+      }
+    });
 
   socket.on("send-random-song", ({ song_details }) => {
     // console.log(song_details);
     const user = getUser(socket.id);
     if (user) {
-      removeVotedStatus(user.room_id);
+      // removeVotedStatus(user.room_id);
       io.to(user.room_id).emit("recieve-song", {
         song_details,
       });
@@ -197,28 +202,18 @@ io.on("connection", (socket) => {
     }
   })
     
-  socket.on("check-votes", ({ allPlayersVoted }) => {
+  socket.on("game_event", ({ game_event, song_id }) => {
     const user = getUser(socket.id);
     if (user) {
-      // io.to(user.room_id).emit("notification", {
-      //   success,
-      //   message,
-      //   all_voted: success,
-      // });
-      io.to(user.room_id).emit("show-scoreboard", { allVoted: allPlayersVoted });
+      io.to(user.room_id).emit("change_game_event", { game_event, song_id });
     }
   });
 
-  socket.on("player-vote", ({ song_id, voted_player_id }) => {
+  socket.on("player-vote", ({ song_id }) => {
     const user = getUser(socket.id);
-    if (user) {
-      // addVotedDetails(socket.id, song_details);
-      // Delete the song id from active room details once voted
-      // while scoring check if anyone got the answer right or all got wrong
-      
+    if (user) {      
       // Send the updated data after adding the voted details of the player
-      let room_users = getUsersInRoom(user.room_id);
-      io.to(user.room_id).emit("fetchVoters", { song_id, voted_player_id, room_users });
+      io.to(user.room_id).emit("fetchVoters", { song_id });
 
       io.to(user.room_id).emit("notification", {
         success: true,
@@ -228,8 +223,8 @@ io.on("connection", (socket) => {
   })
 
   // Disconnect event
-  socket.on("disconnect", () => {
-    let user = getUser(socket.id);
+  socket.on("disconnect", async () => {
+    let user = await getUser(socket.id);
     if (user) {
       // send message to all that user is disconnected
       socket.broadcast
@@ -238,9 +233,9 @@ io.on("connection", (socket) => {
             "message",
             formatMessages(botName, null, `${user.name} has left the room.`)
           );
-        deletePlayer(user.user_id, user.room_id)
+        await deletePlayer(user.user_id, user.room_id)
         // Send users and room Info
-        user = removeUser(socket.id);
+        user = await removeUser(socket.id);
         
         io.to(user.room_id).emit("roomUsers", {
           room_id: user.room_id,

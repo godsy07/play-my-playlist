@@ -20,9 +20,7 @@ function App() {
         <ProtectedRoute exact path='/createRoom' component={CreateRoom} />
         <ProtectedRoute exact path='/userSettings' component={UserSettings} />
         <ProtectedRoute exact path='/joinRoom' component={JoinRoom} />
-        {/* <ProtectedRoute exact path='/dashboard' component={PlayerDashboard} /> */}
-        <ProtectedRoute exact path='/dashboard' component={Dashboard} />
-        {/* <ProtectedRoute exact path='/game-room' component={GameRoom} /> */}
+        <ProtectedRoute exact path='/dashboard/:id/:room_id' component={Dashboard} />
         <Route exact path='*' component={NotFoundPage} />
       </Switch>
     </Router>

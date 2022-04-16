@@ -64,6 +64,11 @@ const FloatingTextBlock = ({
             value={message}
             onChange={setMessage}
             placeholder='Enter your message'
+            onKeyPress={(e) => {
+              if (e.which === 13) {
+                onClick(e); // On keypress Enter
+              }
+            }}
           />
           <Button onClick={onClick}>
             <FaPaperPlane /> Send

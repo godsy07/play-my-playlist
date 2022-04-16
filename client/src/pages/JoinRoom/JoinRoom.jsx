@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 import axios from "axios";
 import { DATA_URL } from "../../index";
@@ -10,6 +10,7 @@ import { IoMdEye, IoIosEyeOff } from "react-icons/io";
 
 const JoinRoom = (props) => {
   let history = useHistory();
+
   const [roomID, setRoomID] = useState("");
   const [password, setPassword] = useState("");
   const [viewPassword, setViewPassword] = useState(false);
@@ -87,21 +88,26 @@ const JoinRoom = (props) => {
       let joinData = {
         room_id: roomID,
         password: password,
-        player_id: props.userInfo.data.id,
+        player_id: props.userInfo._id,
       };
       // console.log(joinData);
       const response = await axios.post(
         `${DATA_URL}/playlist/api/room/join-room`,
         joinData
       );
-      // console.log(response);
       if (response.status === 200) {
+        // console.log("join room api call");
+        // console.log(response);
         Swal.fire({
           icon: "success",
           title: "Success",
           text: response.data.message,
         });
-        history.push({ pathname: "/dashboard", search: `?room_id=${roomID}` });
+        history.push({
+          pathname: `/dashboard/${response.data.roomInfo._id}/${roomID}`,
+          state: { room_id: response.data.roomInfo._id },
+        });
+        // history.push({ pathname: "/dashboard", search: `/${response.data.roomInfo._id}/${roomID}`, state: { room_id: response.data.roomInfo._id } });
       } else {
         Swal.fire({
           icon: "error",
@@ -110,14 +116,15 @@ const JoinRoom = (props) => {
         });
       }
     } catch (err) {
-      // console.log(err.response.data.message);
-      if (err.response.data.message) {
+      if (err.response) {
+        console.log(err.response);
         Swal.fire({
           icon: "error",
           title: "Oops...",
           text: err.response.data.message,
         });
       } else {
+        console.log(err);
         Swal.fire({
           icon: "error",
           title: "Oops...",
@@ -138,7 +145,7 @@ const JoinRoom = (props) => {
       <MainHeaderDiv
         title='Create Room'
         routeName='CreateRoom'
-        userInfo={props.userInfo.data}
+        userInfo={props.userInfo}
       />
       <div className='join-room-div'>
         <Container className='pb-1' fluid>

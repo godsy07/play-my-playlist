@@ -5,6 +5,9 @@ const userModel = require("../model/userModel");
 const scorePointModel = require("../model/scorePointModel");
 const Joi = require("joi");
 
+const mongoose = require("mongoose");
+const ObjectId = mongoose.Types.ObjectId;
+
 // Generate random roomID
 const addSong = async (req, res) => {
   const { room_id, player_id, song } = req.body;
@@ -93,12 +96,10 @@ const getRoomSongs = async (req, res) => {
   try {
     const roomData = await songModel.find({ room_id });
     if (roomData.host_id !== player_id) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "You are not authorized for this action.",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "You are not authorized for this action.",
+      });
     }
     const songsData = await songModel.find({ room_id });
     const songsCount = await songModel.where({ room_id: room_id }).count();
@@ -161,29 +162,29 @@ const getSongById = async (req, res) => {
 const chooseRandomRoomSong = async (req, res) => {
   const { room_id } = req.body;
   try {
-    const roomData = await roomModel.find({ room_id });
-    
+    const roomData = await roomModel.find({ _id: room_id });
+
     if (roomData.length === 0) {
       return res
         .status(400)
         .json({ success: false, message: "Please enter a valid roomID." });
-      }
+    }
 
-    const songsData = await songModel.find({ room_id });
+    console.log("room_id");
+    console.log(room_id);
+    const songsData = await songModel.find({ room_id, song_status: "not_played" });
     // const songsCount = await songModel.where({ room_id: room_id }).count();
 
     let song_index = Math.floor(Math.random() * songsData.length); // find a rondom index number for songsData
     let randomSong = songsData[song_index];
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        randomSong,
-        songsData,
-        song_index,
-        message: "Successfully fetched song.",
-      });
+    return res.status(200).json({
+      success: true,
+      randomSong,
+      songsData,
+      song_index,
+      message: "Successfully fetched song.",
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -203,69 +204,75 @@ const votePlayer = async (req, res) => {
       player_id: Joi.string().required().label("Player ID"),
     });
     // Validation of details recieved starts here
-    const validate = schema.validate({ room_id, song_id, voted_player_id, player_id });
+    const validate = schema.validate({
+      room_id,
+      song_id,
+      voted_player_id,
+      player_id,
+    });
     const { error } = validate;
     if (error) {
       message = error.details[0].message;
       return res.status(400).json({ success: false, message });
     }
+    
+    // Check the player cannot vote themselves
+    if (player_id === voted_player_id) {
+      return res.status(400).json({ success: false, message: "You cannot vote yourself." });
+    }
 
     let points = 0,
-      scoreData,
       votedUserData;
 
     const songData = await songModel.find({ _id: song_id });
     let voteData = await voteModel.find({ room_id, player_id, song_id });
+    
     let scoreDetails = await scorePointModel.find({ room_id, player_id });
+    
     //Fetch voted user Details
-    votedUserData = await userModel
-    .find({ _id: voted_player_id });
+    votedUserData = await userModel.find({ _id: voted_player_id });
 
     // Check for valid inputs
     if (songData.length === 0 || votedUserData.length === 0) {
       return res
-      .status(400)
-      .json({ success: false, message: "Invalid data input." });
+        .status(400)
+        .json({ success: false, message: "Invalid data input." });
     }
 
+    if (voted_player_id == songData[0].player_id) {
+      points = 10;
+    }
 
-    // Check the player cannot vote themselves
-    // if (voted_player_id === player_id) {
-    //   return res
-    //   .status(400)
-    //   .json({ success: false, message: "You cannot vote yourself." });
-    // }
-
-    if (voteData.length > 0) {
-      // if the voted_id is different then update the record or return error
-      if (songData[0].player_id === voteData[0].voted_player_id) {
-        points = -10;
-      }
-    } else {
+    if (voteData.length === 0) {
       voteData = await voteModel.create({
         room_id,
         player_id,
         voted_player_id,
         song_id,
+        current_points: points,
       });
-    }
-
-    if (scoreDetails.length === 0) {
-      if (songData[0].player_id === voted_player_id) {
-        // If voted person is right 10 points
-        points = 10;
-      }
-      scoreData = await scorePointModel.create({ room_id, player_id, points });
+      
     } else {
-      if (songData[0].player_id === voted_player_id) {
-        // If voted person is right 10 points
-        points = 10;
-      } else {
-        if(scoreDetails[0].points > 5) points = -5;
+      await voteModel.update(
+        { room_id, player_id, song_id },
+        { voted_player_id, current_points: points }
+      );
+      
+      if (voteData[0].current_points == 10 && voted_player_id == songData[0].player_id) {
+        points = scoreDetails[0].points;
+      } else if (voteData[0].current_points == 10 && voted_player_id != songData[0].player_id) {
+        points = scoreDetails[0].points - 10;
       }
-      points = scoreDetails[0].points + points;
-      // if (points < 0) points = 0;
+      voteData = await voteModel.find({ room_id, player_id, song_id });
+      
+    }
+    
+    if (scoreDetails.length === 0) {
+      
+      scoreData = await scorePointModel.create({ room_id, player_id, points });
 
+    } else {
+      
       scoreData = await scorePointModel.findOneAndUpdate(
         { room_id, player_id },
         { points },
@@ -273,14 +280,13 @@ const votePlayer = async (req, res) => {
       );
 
     }
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "Vote Player success.",
-        voteData: voteData[0],
-        voted_player: votedUserData[0].name.split(" ")[0],
-      });
+
+    return res.status(200).json({
+      success: true,
+      message: "Vote Player success.",
+      voteData: voteData[0],
+      voted_player: votedUserData[0].name.split(" ")[0],
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -293,7 +299,6 @@ const votePlayer = async (req, res) => {
 const fetchUserVote = async (req, res) => {
   const { room_id, player_id } = req.body;
   try {
-    
     return res
       .status(200)
       .json({ success: true, message: "Successfully fetched user vote." });
@@ -302,16 +307,184 @@ const fetchUserVote = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Some error occurred in server." });
+  }
+};
+
+const fetchVotedPlayers = async (req, res) => {
+  try {
+    const { room_id, song_id } = req.body;
+
+    const schema = Joi.object({
+      room_id: Joi.string().min(4).required().label("Room ID"),
+      song_id: Joi.string().required().label("Song"),
+    });
+    // Validation of details recieved starts here
+    const validate = schema.validate({ room_id, song_id });
+    const { error } = validate;
+    if (error) {
+      message = error.details[0].message;
+      return res.status(400).json({ success: false, message });
+    }
+
+    const votedPlayers = await voteModel.aggregate([
+      { $match: { room_id: ObjectId(room_id), song_id: ObjectId(song_id) } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "player_id",
+          foreignField: "_id",
+          as: "player",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "player_id",
+          foreignField: "_id",
+          as: "voted_player",
+        },
+      },
+      { $unwind: "$player" },
+      { $unwind: "$voted_player" },
+      {
+        $project: {
+          "player.email": 0,
+          "player.password": 0,
+          "player.profile_pic_url": 0,
+          "player.activation": 0,
+          "player.createdAt": 0,
+          "player.updatedAt": 0,
+          "player.game_status": 0,
+          "voted_player.email": 0,
+          "voted_player.password": 0,
+          "voted_player.profile_pic_url": 0,
+          "voted_player.activation": 0,
+          "voted_player.createdAt": 0,
+          "voted_player.updatedAt": 0,
+          "voted_player.game_status": 0,
+        },
+      },
+    ]);
+
+    // Fetch voted info (like songName, players_ids) from db
+    // const votedData = await voteModel.find({ room_id, song_id }); // also fetch scores with it
+
+    return res
+      .status(200)
+      .json({
+        success: true,
+        // votedData,
+        votedPlayers,
+        message: "Successfully fetched voted info",
+      });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Some error occurred in server." });
+  }
+};
+
+const removeVotedSongs = async (req, res) => {
+  const { song_id } = req.body;
+  try {
+    const deletedSong = await songModel.deleteMany({ _id: song_id });
+    console.log("deletedSong");
+    console.log(deletedSong);
+    const deletedVotes = await voteModel.deleteMany({ song_id });
+    console.log("deletedVotes");
+    console.log(deletedVotes);
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Votes and songs deleted." });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Some error occured in the server." });
+  }
+};
+
+const fetchPlayersVoteStatus = async (req, res) => {
+  try {
+    const { room_id, song_id } = req.body;
+
+    const schema = Joi.object({
+      room_id: Joi.string().min(4).required().label("Room ID"),
+      song_id: Joi.string().min(4).required().label("Song ID"),
+    });
+    // Validation of details recieved starts here
+    const validate = schema.validate({ room_id, song_id });
+    const { error } = validate;
+    if (error) {
+      message = error.details[0].message;
+      return res.status(400).json({ success: false, message });
+    }
+
+    // const votedPlayers = await voteModel.find({ room_id, song_id });
+    const votedPlayers = await voteModel.aggregate([
+      { $match: { room_id: ObjectId(room_id), song_id: ObjectId(song_id) } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "player_id",
+          foreignField: "_id",
+          as: "player",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "player_id",
+          foreignField: "_id",
+          as: "voted_player",
+        },
+      },
+      { $unwind: "$player" },
+      { $unwind: "$voted_player" },
+      {
+        $project: {
+          "player.email": 0,
+          "player.password": 0,
+          "player.profile_pic_url": 0,
+          "player.activation": 0,
+          "player.createdAt": 0,
+          "player.updatedAt": 0,
+          "player.game_status": 0,
+          "voted_player.email": 0,
+          "voted_player.password": 0,
+          "voted_player.profile_pic_url": 0,
+          "voted_player.activation": 0,
+          "voted_player.createdAt": 0,
+          "voted_player.updatedAt": 0,
+          "voted_player.game_status": 0,
+        },
+      },
+    ]);
+
+    return res
+      .status(200)
+      .json({
+        success: true,
+        votedPlayers,
+        message: "Fetched player vote status.",
+      });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Something went wrong in server." });
     }
   };
   
-  const fetchVotedPlayers = async (req, res) => {
+  const changeSongStatus = async (req, res) => {
     try {
-      const {room_id, song_id} = req.body;
-      
+      const { room_id, song_id, status } = req.body;
+
       const schema = Joi.object({
         room_id: Joi.string().min(4).required().label("Room ID"),
-        song_id: Joi.string().required().label("Song"),
+        song_id: Joi.string().min(4).required().label("Song ID"),
+        status: Joi.string().valid("not_played","played").label("Song ID"),
       });
       // Validation of details recieved starts here
       const validate = schema.validate({ room_id, song_id });
@@ -320,66 +493,140 @@ const fetchUserVote = async (req, res) => {
         message = error.details[0].message;
         return res.status(400).json({ success: false, message });
       }
-
-      // Fetch voted info (like songName, players_ids) from db
-      const votedData = await voteModel.find({ room_id, song_id });
-
-      return res.status(200).json({ success: true, votedData, message: "Successfully fetched voted info" });
-    } catch (error) {
-      console.log(error)
-      return res
-        .status(500)
-        .json({ success: false, message: "Some error occurred in server." });  
-  }
-}
-  
-  const removeVotedSongs = async (req, res) => {
-    const { song_id } = req.body;
-    try {
-      const deletedSong = await songModel.deleteMany({ _id: song_id });
-      console.log("deletedSong");
-      console.log(deletedSong);
-      const deletedVotes = await voteModel.deleteMany({ song_id });
-      console.log("deletedVotes");
-      console.log(deletedVotes);
       
-      return res
-      .status(200)
-      .json({ success: true, message: "Votes and songs deleted." });
-    } catch (error) {
-      return res
-      .status(500)
-      .json({ success: false, message: "Some error occured in the server." });
-    }
-  };
-  
-  const fetchPlayersScores = async (req, res) => {
-    try {
-      const { room_id } = req.body;
+      let songData = await songModel.find({ room_id, song_id });
       
-      const schema = Joi.object({
-        room_id: Joi.string().min(4).required().label("Room ID"),
-      });
-      // Validation of details recieved starts here
-      const validate = schema.validate({ room_id });
-      const { error } = validate;
-      if (error) {
-        message = error.details[0].message;
-        return res.status(400).json({ success: false, message });
+      if (songData.length === 0) {
+        return res.status(400).json({ success: false, message: "Data does not exist." });
       }
 
-      let scoreData = await scorePointModel.find({ room_id });
+      songData = await songModel.update({ room_id, song_id },{ song_status: status });
 
       return res
       .status(200)
-      .json({ success: true, scoreData, message: "Player scores successfully fetched." });
+      .json({ success: true, message: "Song status successfully changed."});
     } catch(error) {
-      return res
-        .status(500)
-        .json({ success: false, message: "Some error occured in the server." });
-    }
+    return res
+      .status(500)
+      .json({ success: false, message: "Something went wrong in server." });
   }
-  
+}
+
+const fetchPlayersScores = async (req, res) => {
+  try {
+    const { room_id, song_id } = req.body;
+
+    const schema = Joi.object({
+      room_id: Joi.string().min(4).required().label("Room ID"),
+      song_id: Joi.string().min(4).required().label("Song ID"),
+    });
+    // Validation of details recieved starts here
+    const validate = schema.validate({ room_id, song_id });
+    const { error } = validate;
+    if (error) {
+      message = error.details[0].message;
+      return res.status(400).json({ success: false, message });
+    }
+
+    // const votedData = await userModel.find({ active_room: room_id }).count();
+    const votedDataCount = await voteModel.find({ room_id, song_id }).count();
+    const activeUsersCount = await userModel
+      .find({ active_room: room_id })
+      .count();
+
+    if (votedDataCount !== activeUsersCount) {
+      return res
+        .status(202)
+        .json({ success: false, message: "All users have not voted." });
+    }
+
+    // let scoreData = await scorePointModel.find({ room_id });
+    // let scoreData = await scorePointModel.aggregate([
+    //   { $match: { room_id: ObjectId(room_id) } },
+    //   {
+    //     $lookup: {
+    //       from: "users",
+    //       localField: "player_id",
+    //       foreignField: "_id",
+    //       as: "player"
+    //     }
+    //   },
+    //   { $unwind: "$player" },
+    // ]);
+
+    let scoreData = await voteModel.aggregate([
+      { $match: { room_id: ObjectId(room_id), song_id: ObjectId(song_id) } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "player_id",
+          foreignField: "_id",
+          as: "player"
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "voted_player_id",
+          foreignField: "_id",
+          as: "voted_player"
+        }
+      },
+      {
+        $lookup: {
+          from: "score_points",
+          localField: "room_id",
+          foreignField: "room_id",
+          localField: "player_id",
+          foreignField: "player_id",
+          as: "score_points"
+        }
+      },
+      { $unwind: "$player" },
+      { $unwind: "$voted_player" },
+      { $unwind: "$score_points" },
+      {
+        $project: {
+          "player._id": 0,
+          "player.email": 0,
+          "player.active_room": 0,
+          "player.profile_pic_url": 0,
+          "player.activation": 0,
+          "player.password": 0,
+          "player.createdAt": 0,
+          "player.updatedAt": 0,
+          "player.game_status": 0,
+          "voted_player._id": 0,
+          "voted_player.email": 0,
+          "voted_player.active_room": 0,
+          "voted_player.profile_pic_url": 0,
+          "voted_player.activation": 0,
+          "voted_player.password": 0,
+          "voted_player.createdAt": 0,
+          "voted_player.updatedAt": 0,
+          "voted_player.game_status": 0,
+          "score_points._id": 0,
+          "score_points.room_id": 0,
+          "score_points.createdAt": 0,
+          "score_points.updatedAt": 0,
+        }
+      }
+    ]);
+
+    return res
+      .status(200)
+      .json({
+        success: true,
+        scoreData,
+        message: "Player scores successfully fetched.",
+      });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Some error occured in the server." });
+  }
+};
+
 module.exports = {
   addSong,
   deleteSong,
@@ -391,5 +638,7 @@ module.exports = {
   fetchUserVote,
   fetchVotedPlayers,
   removeVotedSongs,
+  fetchPlayersVoteStatus,
+  changeSongStatus,
   fetchPlayersScores,
 };

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Redirect, Route, useHistory } from "react-router-dom";
+import { Redirect, Route } from "react-router-dom";
+import jwt_decode from "jwt-decode";
+import { useCookies } from "react-cookie";
+
 import axios from "axios";
 import { DATA_URL } from "../index";
-import { useCookies } from "react-cookie";
 import LoadingSpinner from "../components/layouts/LoadingSpinner/LoadingSpinner";
 
 function ProtectedRoute({ component: Component, ...restOfProps }) {
-  const history = useHistory();
-  const [cookies, setCookie] = useCookies(["playlist_token"]);
+  const [cookies] = useCookies(["playlist_token"]);
   const [userInfo, setUserInfo] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -18,42 +19,49 @@ function ProtectedRoute({ component: Component, ...restOfProps }) {
     }
   }, [userInfo]);
   // // API call to check if the token available is valid
-  const checkValidToken = async () => {
+  function checkValidToken() {
+    var decoded = jwt_decode(cookies.playlist_token);
+    fetchUserData(decoded.id)
+  }
+
+  const fetchUserData = async (user_id) => {
     try {
-      const response = await axios.get(
-        `${DATA_URL}/playlist/api/user/get-data`,
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/user/get-user-details`,
         {
-          withCredentials: true,
+          user_id,
         }
       );
-      // console.log(response);
-      setUserInfo(response.data);
-      setIsLoaded(true);
-    } catch (err) {
-      if (err.response) {
-        console.log(err.response);
+
+      if (response.status === 200) {
+        setUserInfo(response.data.userInfo);
+        setIsLoaded(true);
+      }
+
+    } catch(error) {
+      if (error.response) {
+        console.log(error.response);
       } else {
-        console.log(err);
+        console.log(error);
       }
       setIsLoaded(true);
     }
-  };
+  }
+
+  if (!cookies.playlist_token) {
+    return <Redirect to={{
+      pathname: "/login-signup",
+      search: "?user=unauthorized",
+      state: { signup: false }
+    }}
+  />;
+  }
 
   if (!isLoaded) {
     return (
       <div className='main-container mt-5 d-flex justify-content-center'>
-        <LoadingSpinner />
+        <LoadingSpinner className="mt-5" />
       </div>
-    );
-  } else if (isLoaded === true && userInfo === null) {
-    return (
-      <Redirect
-        to={{
-          pathname: "/login-signup",
-          search: "?user=unauthorized",
-          state: { signup: false },
-        }}
-      />
     );
   } else {
     return (

@@ -3,6 +3,9 @@ const songModel = require("../model/songModel");
 const UserModel = require("../model/userModel");
 const Joi = require("joi");
 
+const mongoose = require("mongoose");
+const ObjectId = mongoose.Types.ObjectId;
+
 // Generate random roomID
 const createRoomID = async (req, res) => {
   let roomID = createRoomId();
@@ -22,29 +25,30 @@ const createRoomID = async (req, res) => {
 
 // route to add roomDetails
 const createRoom = async (req, res) => {
-  const roomInfo = req.body;
-  let output = {};
-  // Schema defination for Validation of details recieved
-  const schema = Joi.object({
-    room_id: Joi.string().alphanum().min(4).required(),
-    host_id: Joi.string().min(3).required(),
-    room_name: Joi.string().min(4).max(20).required(),
-    no_of_players: Joi.number().required().min(2).max(4), // maximum 4 no of players in a room for now
-    password: Joi.string()
-      .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
-      .min(6)
-      .required(),
-    room_rules: Joi.string().allow("").optional().max(300),
-  });
-  // Validation of details recieved starts here
-  const validate = schema.validate(roomInfo);
-  const { error } = validate;
-  if (error) {
-    output.status = "error";
-    output.message = error.details[0].message;
-    return res.status(400).send(output);
-  }
   try {
+    const roomInfo = req.body;
+    let output = {};
+    console.log(req.body)
+    // Schema defination for Validation of details recieved
+    const schema = Joi.object({
+      room_id: Joi.string().alphanum().min(4).required(),
+      host_id: Joi.string().min(3).required(),
+      room_name: Joi.string().min(4).max(20).required(),
+      player_limit: Joi.number().required().min(3).max(4), // maximum 4 no of players in a room for now
+      password: Joi.string()
+        .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
+        .min(6)
+        .required(),
+      room_rules: Joi.string().allow("").optional().max(300),
+    });
+    // Validation of details recieved starts here
+    const validate = schema.validate(roomInfo);
+    const { error } = validate;
+    if (error) {
+      output.success = false;
+      output.message = error.details[0].message;
+      return res.status(400).send(output);
+    }
     // Check if the room exists return error
     let roomData = await roomModel.find({ room_id: roomInfo.room_id });
     if (roomData.length !== 0) {
@@ -58,17 +62,17 @@ const createRoom = async (req, res) => {
       // const roomData = new roomModel({ ...roomInfo, players: [host_id] });
       // await roomData.save();
       output.roomInfo = roomDetails;
+      
+      // If Data if fetched successfully send success status with data and message
+      output.success = false;
+      output.message = "You have successfully created the room.";
+      return res.status(200).json(output);
     }
   } catch (error) {
-    output.status = "error";
-    output.message = error._message;
-    // output.message = error.message;
+    output.success = false;
+    output.message = "Some error occurred in server.";
     return res.status(500).send(output);
   }
-  // If Data if fetched successfully send success status with data and message
-  output.status = "success";
-  output.message = "You have successfully created the room.";
-  res.json(output);
 };
 
 // Check RoomID exists or NOT
@@ -97,27 +101,26 @@ const checkRoom = async (req, res) => {
 
 // Route for Joining a particular room
 const joinRoom = async (req, res) => {
-  const { room_id, password, player_id } = req.body;
-  let output = {};
-  // Schema defination for Validation of details recieved
-  const schema = Joi.object({
-    room_id: Joi.string().alphanum().min(4).required(),
-    password: Joi.string()
-      .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
-      .min(6)
-      .required(),
-  });
-  // Validation of details recieved for join room starts here
-  const validate = schema.validate({ room_id, password });
-  const { error } = validate;
-  if (error) {
-    output.status = "error";
-    output.message = error.details[0].message;
-    return res.status(400).send(output);
-  }
   try {
-    let dbJoinRoom = await roomModel.findOne({ room_id }).select("+password");
-    // console.log(dbJoinRoom);
+    const { room_id, password, player_id } = req.body;
+    let output = {};
+    // Schema defination for Validation of details recieved
+    const schema = Joi.object({
+      room_id: Joi.string().alphanum().min(4).required(),
+      password: Joi.string()
+        .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
+        .min(6)
+        .required(),
+    });
+    // Validation of details recieved for join room starts here
+    const validate = schema.validate({ room_id, password });
+    const { error } = validate;
+    if (error) {
+      output.status = "error";
+      output.message = error.details[0].message;
+      return res.status(400).json(output);
+    }
+    let dbJoinRoom = await roomModel.findOne({ room_id });
 
     if (!dbJoinRoom) {
       message = "Room does not exist with this roomID.";
@@ -129,41 +132,21 @@ const joinRoom = async (req, res) => {
       message = "You have entered wrong password.";
       return res.status(401).json({ success: false, message });
     }
-    // Adding new players joining room in
-    let players = [...dbJoinRoom.players];
-    if (players.length !== 0) {
-      let exist = false, adminExist = false;
-      // Check for each item if the id already there in document
-      players.forEach((item) => {
-        if (item === player_id) exist = true;
-        if (item === dbJoinRoom.host_id) adminExist = true;
-      });
-      // If player Id does not already exist in array push it in players array and save it in document
-      if (!exist) {
-        if (!adminExist) {
-          // check if admin has not joined, keep one space for them to start the game
-          if (dbJoinRoom.no_of_players === players.length - 1) {
-            return res.status(501).json({ success: false, message: "Player limit has reached." });
-          }
-        }
-        // Check if the limit of number of players is exceeded if new player is added
-        if (dbJoinRoom.no_of_players < players.length + 1) {
-          return res.status(501).json({ success: false, message: "Room player limit has reached." });
-        }
-        players.push(player_id);
-        dbJoinRoom.players = players;
-        await dbJoinRoom.save();
-      }
-    }
+    // Check if player limit has reached or not OR Admin of room has joined or not
+    let updateUser, roomUsers;
+
+    updateUser = await UserModel.findOneAndUpdate({ _id: player_id },{ active_room: dbJoinRoom._id },{ new: true });
+
+    roomUsers = await UserModel.find({ active_room: dbJoinRoom._id });
     
     output.roomInfo = dbJoinRoom;
-    output.status = "success";
+    output.updateUser = updateUser;
+    output.success = true;
     output.message = "Successfully joined into the room.";
     return res.status(200).json(output);
   } catch (error) {
-    output.status = "error";
-    output.message = error._message;
-    return res.status(500).send(output);
+    console.log(error)
+    return res.status(500).json({ success: false, message: "Some error occured in server." });
   }
 };
 
@@ -173,7 +156,7 @@ const getRoomDetails = async (req, res) => {
   try {
     const roomDetails = await roomModel
       .find({ room_id })
-      .select("-password -_id"); // Fetching all details of room except password and _id
+      .select("-password"); // Fetching all details of room except password and _id
 
       // console.log(roomDetails);
       
@@ -183,10 +166,51 @@ const getRoomDetails = async (req, res) => {
       // fetch Hostname
       const user = await UserModel.findOne({ _id: roomDetails[0].host_id }).select("-password");
       
-      return res.status(200).json({ status: "success", roomDetails: roomDetails[0], host_name: user.name, message: "Successfully fetched room Details." });
+      return res.status(200).json({ status: "success", roomDetails: roomDetails[0], hostDetails: user, message: "Successfully fetched room Details." });
     }
   } catch (error) {
     return res.status(500).json({ status: "error", error, message: "Something went wrong in server." });
+  }
+};
+
+const getRoomUsers = async (req, res) => {
+  const { room_id } = req.body;
+  try {
+    const schema = Joi.object({
+      room_id: Joi.string().alphanum().min(4).required(),
+    });
+    // Validation of details recieved for join room starts here
+    const validate = schema.validate({ room_id });
+    const { error } = validate;
+    if (error) {
+      return res.status(400).json({ success: false, message: error.details[0].message });
+    }
+
+    // const usersTest= await UserModel.where("active_room").equals(roomData[0]._id).populate('active_room');
+
+    const roomUsers = await UserModel.aggregate([
+      { $match: { active_room: ObjectId(room_id) } },
+      {
+        $lookup: {
+          from: 'songs',
+          localField: '_id',
+          foreignField: 'player_id',
+          as: 'songs',
+        },
+      },
+      { $addFields: {songsCount: {$size: "$songs"}}},
+      {
+        $project: {
+          "songs.song": 0,
+          "songs.player_id": 0,
+          "songs.room_id": 0,
+      }}
+    ]);
+
+    return res.status(200).json({ success: true, roomUsers, message: "Successfully fetched users of the room." });
+  } catch(error) {
+    console.log(error);
+    return res.status(500).json({ success: false, message: "Something went wrong in server." });
   }
 };
 
@@ -225,5 +249,6 @@ module.exports = {
   checkRoom,
   joinRoom,
   getRoomDetails,
+  getRoomUsers,
   startGameRoom,
 };

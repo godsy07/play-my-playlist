@@ -4,9 +4,10 @@ const SongModel = require("../model/songModel");
 const VoteModel = require("../model/voteModel");
 const ScorePointModel = require("../model/scorePointModel");
 
-
-const playerJoinRoom = async (user_id, room_id) => {
+const changeUserGameStatus = async (room_id) => {
+  console.log(room_id);
   
+  const roomInfo = await RoomModel.find({ room_id });
 }
 
 const deletePlayer = async (user_id, room_id) => {
@@ -16,13 +17,13 @@ const deletePlayer = async (user_id, room_id) => {
     let deletedData;
     // deletedData = await ScorePointModel.deleteMany({ room_id, player_id: user_id });
     // console.log('deleted score points');
-    console.log(deletedData);
-    deletedData = await SongModel.deleteMany({ room_id, player_id: user_id });
-    console.log('deleted songs');
-    console.log(deletedData);
-    deletedData = await VoteModel.deleteMany({ room_id, player_id: user_id });
-    console.log('deleted votes');
-    console.log(deletedData);
+    // console.log(deletedData);
+    // deletedData = await SongModel.deleteMany({ room_id, player_id: user_id });
+    // console.log('deleted songs');
+    // console.log(deletedData);
+    // deletedData = await VoteModel.deleteMany({ room_id, player_id: user_id });
+    // console.log('deleted votes');
+    // console.log(deletedData);
   } catch (error) {
     console.log('Server Error');
     console.log(error);
@@ -39,4 +40,4 @@ const removeVotedSongs = async (song_id) => {
   }
 }
 
-module.exports = { deletePlayer, removeVotedSongs };
+module.exports = { deletePlayer, removeVotedSongs, changeUserGameStatus };

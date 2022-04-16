@@ -4,10 +4,11 @@
   background-color: rgb(200, 0, 200);
   /* border: 1px solid rgb(20,20,20); */
   border-radius: 50%;
-  box-shadow: 2px 2px 5px rgb(60, 43, 65), -2px -2px 5px rgb(94, 6, 116);
+  /* box-shadow: 2px 2px 5px rgb(60, 43, 65), -2px -2px 5px rgb(94, 6, 116); */
 }
 .avatar-icon {
-  filter: drop-shadow(3px 0 10px #fff) drop-shadow(-2px -5px 34px #fff);
+  /* filter: drop-shadow(3px 0 10px #fff) drop-shadow(-2px -5px 34px #fff); */
+  filter: drop-shadow(2px 0 5px #fff) drop-shadow(-2px -0px 5px #fff);
 }
 
 .video-stream {
@@ -20,8 +21,8 @@
 
 .user-status {
   position: absolute;
-  top: 0px;
-  right: 0px;
+  /* top: 0px;
+  right: 0px; */
   font-size: 20px;
   /* background-color: lightgreen; */
   color: #fff;

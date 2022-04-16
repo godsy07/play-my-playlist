@@ -11,6 +11,7 @@ import {
 
 import "./player-dashboard.styles.css";
 import PlayInstructionsModal from "../../components/PlayInstructions/PlayInstructions";
+import { DATA_URL } from "../..";
 
 const PlayerDashboard = ({
   GameStatus,
@@ -23,6 +24,11 @@ const PlayerDashboard = ({
   songsList,
   onChangeSongLink,
   showRules,
+  streamVideo,
+  passAudio,
+  passVideo,
+  toggleAudio,
+  toggleVideo,
   roomButtonOnClick,
   onHideModal,
   onClickAddSong,
@@ -45,14 +51,13 @@ const PlayerDashboard = ({
           >
             <Col lg={9} md={8} sm={7} xs={12} className='d-flex'>
               <AvatarIcon imageUrl={hostProfilePic} />
-              {/* <AvatarIcon imageUrl='https://robohash.org/36?set=set8' /> */}
               {roomDetails && (
                 <div className='d-flex flex-column justify-content-center m-2'>
                   <span>RoomID: {roomID}</span>
                   <span>RoomName: {roomDetails.room_name}</span>
                   <span>Host Name: {hostName}</span>
                   {/* <span>Host Name: {roomDetails.host_id}</span> */}
-                  <span>Player Limit: {roomDetails.no_of_players}</span>
+                  <span>Player Limit: {roomDetails.player_limit}</span>
                 </div>
               )}
             </Col>
@@ -96,15 +101,22 @@ const PlayerDashboard = ({
                   className='d-flex flex-column align-items-center p-2 m-1 text-center'
                 >
                   <AvatarIcon
-                    imageUrl={item.profile_pic_url}
-                    // imageUrl='https://robohash.org/46?set=set4'
+                    imageUrl={ item.profile_pic_url && DATA_URL +"/"+ item.profile_pic_url }
                     // statusDetails={true}
                     statusDetails='connected'
                     showStatus={true}
+                    streamButtons={true}
+                    streamData={streamVideo}
+                    passAudio={passAudio}
+                    passVideo={passVideo}
+                    toggleAudio={toggleAudio}
+                    toggleVideo={toggleVideo}
+                    // toggleAudio={() => setPassAudio(!passAudio)}
+                    // toggleVideo={() => setPassVideo(!passVideo)}
                   />
                   <span>{item.name.split(" ")[0]}</span>
                   <span>
-                    {item.song_count ? item.song_count : "No"} songs added
+                    {item.songsCount ? item.songsCount : "No"} songs added
                   </span>
                 </div>
               ))}
@@ -192,7 +204,7 @@ const PlayerDashboard = ({
                   <Button
                     variant='danger'
                     className='d-flex w-100 justify-content-center align-items-center'
-                    onClick={(e) => onClickRemoveSong(e, song._id)}
+                    onClick={(e) => onClickRemoveSong(e, song._id, song.song)}
                   >
                     <FaTrashAlt className='ms-1' size={22} />
                     REMOVE

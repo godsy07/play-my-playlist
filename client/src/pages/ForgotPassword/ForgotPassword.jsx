@@ -1,6 +1,6 @@
-import React ,{ useState, useEffect } from "react";
+import React ,{ useState } from "react";
 import { Link ,useHistory} from "react-router-dom";
-import { Container, Row, Col, Button, Form } from "react-bootstrap";
+import { Container, Button, Form } from "react-bootstrap";
 import "./ForgotPassword-Style.css";
 import axios from "axios";
 import { DATA_URL } from "../../index";
@@ -9,7 +9,7 @@ import { useCookies } from "react-cookie";
 
 const ForgotPassword = (props) => {
   const history = useHistory();
-  const [cookie, setCookie] = useCookies();
+  const [setCookie] = useCookies();
   const [forgotEmail, setForgotEmail] = useState("");
   const [newForgotPassword, setnewForgotPassword] = useState("");
   const [confirmForgotPassword, setConfirmForgotPassword] = useState("");
