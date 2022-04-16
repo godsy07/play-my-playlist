@@ -116,7 +116,7 @@ const CreateRoom = ({ userInfo }) => {
         host_id: userID,
         room_name: roomName,
         password: passCode,
-        no_of_players: noOfPlayers,
+        player_limit: noOfPlayers,
         room_rules: roomRules,
       };
       // api call for creating room in Database
@@ -127,11 +127,11 @@ const CreateRoom = ({ userInfo }) => {
 
       if (response.status === 200) {
         Swal.fire({
-          icon: response.data.status,
-          title: response.data.status === "success" ? "Success" : "Error",
+          icon: "success",
+          title: "Success",
           text: response.data.message,
         });
-        if (response.data.status === "success") history.push("/joinRoom");
+        history.push("/joinRoom");
       }
 
     } catch (error) {

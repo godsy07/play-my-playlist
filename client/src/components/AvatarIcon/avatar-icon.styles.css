@@ -21,8 +21,8 @@
 
 .user-status {
   position: absolute;
-  top: 0px;
-  right: 0px;
+  /* top: 0px;
+  right: 0px; */
   font-size: 20px;
   /* background-color: lightgreen; */
   color: #fff;

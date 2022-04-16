@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Figure } from "react-bootstrap";
+import { Button, Figure, Image } from "react-bootstrap";
 import {
   FaCheck,
   FaMicrophoneAlt,
@@ -10,15 +10,20 @@ import {
 } from "react-icons/fa";
 // import { FaRegCheckCircle } from "react-icons/fa";
 import { BiWifiOff } from "react-icons/bi";
+import thoughtCloudImage from "../../images/avatar/thought_clouds.png";
 
 import userProfilePic from "../../images/user/user-profile.png";
 import "./avatar-icon.styles.css";
 import { IoChatbubbleEllipsesOutline } from "react-icons/io5";
+import { MdWhereToVote } from "react-icons/md";
 
 const AvatarIcon = ({
   AvatarWidth = 100,
   imageUrl,
   showStatus,
+  votedStatus,
+  votedStatusValue,
+  onVotedStatusChange,
   statusDetails = "connected",
   streamButtons,
   streamStatus,
@@ -44,6 +49,27 @@ const AvatarIcon = ({
       style={{ height: `${AvatarWidth}px`, width: `${AvatarWidth}px` }}
       className='avatar-icon-shape'
     >
+      {votedStatus && (
+        <Button
+          onClick={onVotedStatusChange}
+          className={`${
+            votedStatusValue ? "bg-success" : "bg-warning"
+          } d-flex justify-content-center align-items-center p-0`}
+          title='Click here to vote'
+          style={{
+            position: "absolute",
+            left: "10px",
+            top: "10px",
+            zIndex: "2",
+            height: "30px",
+            width: "30px",
+            borderRadius: "50%",
+            fontSize: "20px",
+          }}
+        >
+          <MdWhereToVote />
+        </Button>
+      )}
       {passVideo ? (
         <>
           <video
@@ -62,7 +88,7 @@ const AvatarIcon = ({
         <Figure.Image
           // height={`${AvatarWidth}px`}
           // width={`${AvatarWidth}px`}
-          style={{ height: "100%", width: "100%", border: "1px solid #fff", objectFit: "cover" }}
+          style={{ height: "100%", width: "100%", objectFit: "cover" }}
           alt='profile-image'
           src={imageUrl ? imageUrl : userProfilePic }
           className='avatar-icon'
@@ -75,8 +101,8 @@ const AvatarIcon = ({
           <span
             className='d-flex justify-content-center align-items-center mx-2'
             style={{
-              height: "30px",
-              width: "30px",
+              height: "20px",
+              width: "20px",
               border: "1px solid rgb(0,0,0,0.4)",
               borderRadius: "50%",
               backgroundColor: `${passAudio ? "rgb(100, 200, 100)" : "rgb(250, 100, 100)" }`,
@@ -87,8 +113,8 @@ const AvatarIcon = ({
           <span
             className='d-flex justify-content-center align-items-center mx-2'
             style={{
-              height: "30px",
-              width: "30px",
+              height: "20px",
+              width: "20px",
               border: "1px solid rgb(250,250,250,0.9)",
               borderRadius: "50%",
               backgroundColor: `${passVideo ? "rgb(100, 200, 100)" : "rgb(250, 100, 100)" }`,
@@ -105,13 +131,16 @@ const AvatarIcon = ({
           className='user-status'
           style={{
             // backgroundColor: statusDetails ? "#05D505" : "#07C9C9",
+            top: statusDetails === "thinking" ? "-12px" : "0px",
+            right: statusDetails === "thinking" ? "-10px" : "0px",
             backgroundColor:
               statusDetails === "connected"
                 ? "#05D505"
                 : statusDetails === "network-issue"
                 ? "rgb(244, 153, 61)"
                 : statusDetails === "thinking"
-                ? "rgb(100,100,200)"
+                ? "#11ffee00"
+                // ? "rgb(100,100,200)"
                 : statusDetails === "winner" && "rgb(50,50,50, 0.7)",
             color: statusDetails === "winner" && "yellow",
           }}
@@ -121,7 +150,8 @@ const AvatarIcon = ({
           ) : statusDetails === "network-issue" ? (
             <BiWifiOff />
           ) : statusDetails === "thinking" ? (
-            <IoChatbubbleEllipsesOutline />
+            // <IoChatbubbleEllipsesOutline />
+            <Image src={thoughtCloudImage} width={35} />
           ) : (
             statusDetails === "winner" && <FaTrophy />
           )}

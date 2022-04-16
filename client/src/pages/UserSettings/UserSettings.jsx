@@ -37,7 +37,7 @@ const UserSettings = ({ userInfo }) => {
   }, []);
 
   const fetchUserDetails = () => {
-    setUserPicURL(DATA_URL + "/" + userInfo.profile_pic_url);
+    setUserPicURL(userInfo.profile_pic_url && DATA_URL + "/" + userInfo.profile_pic_url);
     setuserEmail(userInfo.email);
   };
 
@@ -147,7 +147,7 @@ const UserSettings = ({ userInfo }) => {
                   src={
                     userProfilePic
                       ? URL.createObjectURL(userProfilePic)
-                      : userPicURL.length !== 0
+                      : userPicURL !== null
                       ? userPicURL
                       : profilePic
                   }

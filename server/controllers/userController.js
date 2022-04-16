@@ -68,18 +68,8 @@ const createUser = async (req, res) => {
     return res.status(400).json({ success: false, message });
   } else {
     try {
+      
       // send verify passcodes to email
-      let verifyUser = await verifyUserSignup(email, name);
-      // console.log(verifyUser);
-      if (verifyUser.error) {
-        return res.status(500).json({
-          success: false,
-          message: "Something unexpected error occurred",
-        });
-      }
-      // Data is being stored in DB
-      const data = await UserModel.create(userInfo);
-
       verifyUser = await verifyUserSignup(email, name);
       // console.log(verifyUser);
       if (verifyUser.error) {
@@ -89,9 +79,12 @@ const createUser = async (req, res) => {
         });
       }
 
+      // Data is being stored in DB
+      const data = await UserModel.create(userInfo);
+
       message = "Verification passcode sent through email";
       // message = "User account has been created successfully.";
-      return res.status(200).json({ success: true, data, message });
+      return res.status(200).json({ success: true, userDetails: data, message });
     } catch (error) {
       // message = error.message;
       console.log(error);
@@ -219,17 +212,14 @@ const verifyUserSignup = async (user_email, name) => {
     let pass_code = Math.floor(100000 + Math.random() * 900000);
     // Send the codes in email to the user
     // let send_email = await nodemailerTransporter.sendMail({
-    let send_mail, verifyData;
+    let send_mail, mail_body, verifyData;
+
     let check_verify = await verifyPasswordModel.find({ user_email });
     if (check_verify.length === 0) {
       verifyData = await verifyPasswordModel.create({ user_email, pass_code });
       // console.log("create verifyData")
       // console.log(verifyData)
-      send_mail = await nodemailerTransporter.sendMail({
-        from: process.env.AUTH_EMAIL,
-        to: user_email,
-        subject: `PassCode verification Mail`,
-        html: `<i>Hello ${name},</i>
+      mail_body = `<i>Hello ${name},</i>
                   <br/><br/>
                   <p>
                     Welcome to Play my Playlist.<br/>
@@ -237,9 +227,7 @@ const verifyUserSignup = async (user_email, name) => {
                     <h1>${pass_code}</h1><br/>
                     </p>
                     <br/><br/>
-                  <p style="font-size: 10px; background-color: yellow"><i><b>Note:</b> Please do not share this passcode to anyone. This is only valid for ${process.env.AUTH_EXPIRES} minutes.</i></p>`,
-        replyTo: process.env.AUTH_REPLY_EMAIL,
-      });
+                  <p style="font-size: 10px; background-color: yellow"><i><b>Note:</b> Please do not share this passcode to anyone. This is only valid for ${process.env.AUTH_EXPIRES} minutes.</i></p>`;
     } else {
       verifyData = await verifyPasswordModel.updateOne(
         { user_email },
@@ -248,21 +236,24 @@ const verifyUserSignup = async (user_email, name) => {
       );
       // console.log("updated verifyData")
       // console.log(verifyData)
-      send_mail = await nodemailerTransporter.sendMail({
-        from: process.env.AUTH_EMAIL,
-        to: user_email,
-        subject: `PassCode verification Mail`,
-        html: `<i>Hello ${name},</i>
-                  <br/><br/>
-                  <p>
-                    Here is your activation passcode: <br/>
-                    <h1>${pass_code}</h1><br/>
-                    </p>
+      mail_body = `<i>Hello ${name},</i>
                     <br/><br/>
-                  <p style="font-size: 10px; background-color: yellow"><i><b>Note:</b> Please do not share this passcode to anyone. This is only valid for ${process.env.AUTH_EXPIRES} minutes.</i></p>`,
-        replyTo: process.env.AUTH_REPLY_EMAIL,
-      });
+                    <p>
+                      Here is your activation passcode: <br/>
+                      <h1>${pass_code}</h1><br/>
+                      </p>
+                      <br/><br/>
+                    <p style="font-size: 10px; background-color: yellow"><i><b>Note:</b> Please do not share this passcode to anyone. This is only valid for ${process.env.AUTH_EXPIRES} minutes.</i></p>`;
     }
+    
+    // console.log(mail_body);
+    send_mail = await nodemailerTransporter.sendMail({
+      from: process.env.AUTH_EMAIL,
+      to: user_email,
+      subject: `PassCode verification Mail`,
+      html: mail_body,
+      replyTo: process.env.AUTH_REPLY_EMAIL,
+    });
 
     return { verifyData, send_mail };
   } catch (error) {
@@ -471,7 +462,7 @@ const getUserDetailsByID = async (req, res) => {
   const { user_id } = req.body;
   let message;
   try {
-    const userInfo = await UserModel.findOne({ user_id }).select("-password");
+    const userInfo = await UserModel.findById(user_id).select("-password");
     // console.log(userInfo);
     return res.status(200).json({
       success: true,

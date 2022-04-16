@@ -8,7 +8,8 @@ const RoomSchema = new mongoose.Schema({
     required: true,
   },
   host_id: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'user',
     required: true,
   },
   game_status: {
@@ -22,7 +23,7 @@ const RoomSchema = new mongoose.Schema({
     required: true,
   },
   players: {
-    type: [String],
+    type: [{type: mongoose.Schema.Types.ObjectId, ref: 'user'}],
     required: true,
   },
   password: {
@@ -30,7 +31,7 @@ const RoomSchema = new mongoose.Schema({
     min: [6, "Please choose more secure password atleast 6 characters."],
     required: true,
   },
-  no_of_players: {
+  player_limit: {
     type: Number,
     required: true,
     default: 1,

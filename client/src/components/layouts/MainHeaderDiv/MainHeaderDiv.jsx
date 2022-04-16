@@ -24,7 +24,8 @@ const MainHeaderDiv = (
       denyButtonText: `No`,
     }).then((result) => {
       if (result.isConfirmed) {
-        history.push("/");
+        history.push(path);
+        // history.push("/");
       } else if (result.isDenied) {
         return;
       }
@@ -107,7 +108,7 @@ const MainHeaderDiv = (
         {userInfo && (
           <>
             <AvatarIcon
-              imageUrl={ userInfo && DATA_URL + "/" + userInfo.profile_pic_url }
+              imageUrl={ userInfo.profile_pic_url !== null && DATA_URL + "/" + userInfo.profile_pic_url }
               // imageUrl='https://robohash.org/34?set=set2'
               AvatarWidth='30'
             />

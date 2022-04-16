@@ -13,7 +13,7 @@ const storage = multer.diskStorage({
       const uniqueSuffix = Date.now();
       let extension = file.originalname.split(".")[file.originalname.split(".").length - 1];
       let randomValue = Math.floor(1000 + Math.random() * 9000);
-      cb(null, file.fieldname + uniqueSuffix + "-" + randomValue + "__" + "." + extension);
+      cb(null, file.fieldname + "__" + uniqueSuffix + "-" + randomValue + "." + extension);
     }
   })
   

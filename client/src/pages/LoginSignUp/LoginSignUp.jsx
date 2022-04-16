@@ -13,7 +13,7 @@ const LoginSignUp = (props) => {
   const [cookie, setCookie] = useCookies();
   // State to show signup form if true
   // console.log(props.location.state.signUp);
-  const [signUpShow, setSignUpShow] = useState(null);
+  const [signUpShow, setSignUpShow] = useState(true);
   // States to save the user details
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -35,10 +35,7 @@ const LoginSignUp = (props) => {
   // Load SignUp or Login page on mounting
   useEffect(() => {
     checkValidToken();
-    if (
-      props.location.state.signUp === undefined ||
-      props.location.state.signUp === true
-    ) {
+    if (props.location.state === undefined || props.location.state.signUp === true) {
       setSignUpShow(true);
     } else {
       setSignUpShow(false);
@@ -127,8 +124,9 @@ const LoginSignUp = (props) => {
           text: response.data.message,
           // text: "You have been successfully signed up.",
         });
-        setActivateAccount(true);
         setHeight(activateRef.current.clientHeight);
+        setActivateEmail(userEmail);
+        setActivateAccount(true);
         setsentPassCode(true);
         // history.push("/");
         return;
@@ -310,6 +308,7 @@ const LoginSignUp = (props) => {
 
       if (response.status === 200) {
         console.log(response);
+        setSignUpShow(false);
         Swal.fire({
           icon: "success",
           title: "Success",
@@ -537,20 +536,36 @@ const LoginSignUp = (props) => {
               Go to Login
             </Button>
             <Form.Group className="mt-2">
-              <Form.Label>Submitted Details?</Form.Label>
-              {/* </Form.Group>
-              <Form.Group> */}
-              <Button
-                className='rounded-pill ms-1'
-                onClick={() => {
-                  if (!activateAccount) {
-                    setActivateAccount(true);
-                    setHeight(activateRef.current.clientHeight);
-                  }
-                }}
-              >
-                Activate Account
-              </Button>
+              {activateAccount ? (
+                <>
+                  <Form.Label>Do not have an account?</Form.Label>
+                  <Button
+                    className='rounded-pill ms-1'
+                    onClick={() => {
+                      if (activateAccount) {
+                        setActivateAccount(false);
+                      }
+                    }}
+                  >
+                    Signup Account
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Form.Label>Submitted Details?</Form.Label>
+                  <Button
+                    className='rounded-pill ms-1'
+                    onClick={() => {
+                      if (!activateAccount) {
+                        setActivateAccount(true);
+                        setHeight(activateRef.current.clientHeight);
+                      }
+                    }}
+                  >
+                    Activate Account
+                  </Button>
+                </>
+              )}
             </Form.Group>
             <p className='mt-4'>
               Go to{" "}

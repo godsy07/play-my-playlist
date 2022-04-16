@@ -14,8 +14,17 @@ const UserSchema = new mongoose.Schema(
       required: true,
     },
     active_room: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "room",
       default: null,
+    },
+    // active_room: {
+    //   type: String,
+    //   default: null,
+    // },
+    game_status: {
+      type: Boolean,
+      default: false,
     },
     profile_pic_url: {
       type: String,
