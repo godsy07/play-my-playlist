@@ -195,17 +195,17 @@ io.on("connection", (socket) => {
       io.to(user.room_id).emit("recieve-song", {
         song_details,
       });
-      io.to(user.room_id).emit("roomUsers", {
-        room_id: user.room_id,
-        users: getUsersInRoom(user.room_id),
-      });
+      // io.to(user.room_id).emit("roomUsers", {
+      //   room_id: user.room_id,
+      //   users: getUsersInRoom(user.room_id),
+      // });
     }
   })
     
-  socket.on("game_event", ({ game_event, song_id }) => {
+  socket.on("game_event", ({ game_event, song_id, room_obj_id }) => {
     const user = getUser(socket.id);
     if (user) {
-      io.to(user.room_id).emit("change_game_event", { game_event, song_id });
+      io.to(user.room_id).emit("change_game_event", { game_event, song_id, room_obj_id });
     }
   });
 

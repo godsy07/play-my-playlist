@@ -304,9 +304,15 @@ const Dashboard = (props) => {
       socket.on("recieve-song", ({ song_details }) => {
         console.log("recieve-song");
         console.log(song_details)
-        checkPlayerVotedStatus(song_details.room_id, song_details._id);
-        setCurrentSongID(song_details._id);
-        setCurrentSong(song_details.song);
+        if (song_details) {
+          checkPlayerVotedStatus(song_details.room_id, song_details._id);
+          setCurrentSongID(song_details._id);
+          setCurrentSong(song_details.song);
+        } else {
+          setCurrentSongID("");
+          setCurrentSong("");
+          setGameEvent("finish");
+        }
       });
 
       socket.on("change_game_event", ({ game_event, song_id, room_obj_id }) => {
@@ -315,8 +321,9 @@ const Dashboard = (props) => {
           setGameEvent("results");
         } else if (game_event === "next") {
           setGameEvent("next");
-          fetchScores(song_id);
+          fetchScores(song_id, room_obj_id);
         } else if (game_event === "start") {
+          setShowScoreboard("hide"); // Hide scoreboard
           let status = handlePickRandomSong(room_obj_id);
           if (status) {
             setGameEvent("start");
@@ -449,16 +456,16 @@ const Dashboard = (props) => {
   }
 
   // Fetch Scores
-  const fetchScores = async (song_id) => {
+  const fetchScores = async (song_id, room_id) => {
     try {
-      console.log("Fetch scores of players");
       const response = await axios.post(
         `${DATA_URL}/playlist/api/song/fetch-players-scores`,
         {
-          room_id: roomObjID,
-          song_id: song_id,
+          room_id,
+          song_id,
         }
       );
+      console.log("Fetch scores of players");
       if (response.status === 200) {
         console.log(response.data);
         setScoresData(response.data.scoreData);
@@ -483,10 +490,74 @@ const Dashboard = (props) => {
     }
   };
 
-  const handleCollectVotes = () => {
+  const checkAllVotes = async () => {
+    try {
+      console.log("Check if all players voted");
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/song/check-all-votes`,
+        {
+          room_id: roomObjID,
+          song_id: currentSongID,
+        }
+      );
+      if (response.status === 200) {
+        
+        // setToastData({
+        //   title: "Success",
+        //   message: response.data.message,
+        //   type: "success",
+        //   time: new Date(),
+        // });
+        // setShowToast(true);
+        return true;
+        
+      }
+      return false;
+    } catch (error) {
+      if (error.response) {
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
+      return false;
+    }
+  };
+
+  const handleCollectVotes = async () => {
     if (hostID === userID) {
+      let all_voted = await checkAllVotes();
+      if (all_voted) {
+        socket.emit("game_event",{
+          game_event: "results",
+        });
+      } else {
+        setToastData({
+          title: "Wait...",
+          message: "All players have not voted.",
+          type: "warning",
+          time: new Date(),
+        });
+        setShowToast(true);
+
+      }
+    } else {
+      setToastData({
+        title: "Oops...",
+        message: "Action allowed only to room host",
+        type: "warning",
+        time: new Date(),
+      });
+      setShowToast(true);
+    }
+  }
+
+  const handleCheckResults = async () => {
+    if (hostID === userID) {
+      changeSongStatus("played");
       socket.emit("game_event",{
-        game_event: "results",
+        game_event: "next",
+        song_id: currentSongID,
+        room_obj_id: roomObjID
       });
     } else {
       setToastData({
@@ -498,11 +569,11 @@ const Dashboard = (props) => {
       setShowToast(true);
     }
   }
-  const handleCheckResults = () => {
+  const handleNextSong = () => {
     if (hostID === userID) {
       socket.emit("game_event",{
-        game_event: "next",
-        song_id: currentSongID
+        game_event: "start",
+        room_obj_id: roomObjID
       });
     } else {
       setToastData({
@@ -632,7 +703,7 @@ const Dashboard = (props) => {
     }
   };
 
-  const handleStartGame = async (e) => {
+  const handleStartGame = async (e, room_id) => {
     e.preventDefault();
     try {
       if (userID === roomDetails.host_id) {
@@ -655,7 +726,8 @@ const Dashboard = (props) => {
           });
           return;
         }
-        // handleFetchRoomSongs(roomID, userID);
+        // Change the song to 'not_played' status
+        await changeRoomSongsStatus(room_id);
         // Redirect to GameRoom emitting an event so others might also join
         socket.emit("start_game");
         return;
@@ -666,6 +738,26 @@ const Dashboard = (props) => {
           text: "Only the Room Host can start the Game",
         });
         return;
+      }
+    } catch (error) {
+      if (error.response) {
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
+    }
+  };
+
+  // Change Room songs status to not_played before start of the game
+  const changeRoomSongsStatus = async (room_id) => {
+    try {
+      console.log("handleFetchRoomSongs function");
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/room/reset-room-songs-status`,
+        { room_id }
+      );
+      if (response.status === 200) {
+        console.log(response);
       }
     } catch (error) {
       if (error.response) {
@@ -752,7 +844,7 @@ const Dashboard = (props) => {
       console.log("changeSongStatus function");
       const response = await axios.post(
         `${DATA_URL}/playlist/api/song//change-song-status`,
-        { room_di: roomObjID, song_id: currentSongID, status }
+        { room_id: roomObjID, song_id: currentSongID, status }
       );
 
       if (response.status === 200) {
@@ -771,17 +863,18 @@ const Dashboard = (props) => {
   // pick using node js and socket io
   const handlePickRandomSong = async (room_id) => {
     try {
-      console.log("handlePickRandomSong function");
       const response = await axios.post(
         `${DATA_URL}/playlist/api/song/get-random-room-song`,
         { room_id }
-      );
+        );
+
+      console.log("handlePickRandomSong function");
       if (response.status === 200) {
         console.log(response);
-        if (response.data.randomSong.length === 0) {
-          setGameEvent("finish");
-          return false;
-        }
+        // if (response.data.songsData.length === 0) {
+        //   setGameEvent("finish");
+        //   return false;
+        // }
         // emit event to socketIO
         socket.emit("send-random-song", {
           song_details: response.data.randomSong,
@@ -879,6 +972,7 @@ const Dashboard = (props) => {
       <PlayerDashboard
         GameStatus={GameStatus}
         roomID={roomID}
+        roomObjID={roomObjID}
         hostName={hostName}
         hostProfilePic={hostProfilePic}
         roomDetails={roomDetails}
@@ -918,6 +1012,7 @@ const Dashboard = (props) => {
         fetchPlayerScores={fetchScores}
         handleCollectVotes={handleCollectVotes}
         handleCheckResults={handleCheckResults}
+        handleNextSong={handleNextSong}
         streamVideo={streamVideo}
         passAudio={passAudio}
         passVideo={passVideo}
