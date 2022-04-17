@@ -224,10 +224,30 @@ const startGameRoom = async (req, res) => {
     }
     // change game status from "not_started" to "started"
     const gameData = await roomModel.findOneAndUpdate({ room_id },{ game_status: "started" },{ new: true });
-
+    
     return res.status(200).json({ success: true, message: "Successfully changed the game status.", gameData });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Some error occurred in the server." });
+  }
+}
+
+const resetRoomSongsStatus = async (req, res) => {
+  try{
+    const { room_id } = req.body;
+    
+    const schema = Joi.object({
+      room_id: Joi.string().alphanum().min(4).required(),
+    });
+    // Validation of details recieved for join room starts here
+    const validate = schema.validate({ room_id });
+    const { error } = validate;
+    if (error) {
+      return res.status(400).json({ success: false, message: error.details[0].message });
+    }
+
+    return res.status(200).json({ success: true, message: "Room song status successfully reseted." });
+  } catch(error) {
+    return res.status(500).json({ success: false, message: "Something went wrong in server." });
   }
 }
 
@@ -251,4 +271,5 @@ module.exports = {
   getRoomDetails,
   getRoomUsers,
   startGameRoom,
+  resetRoomSongsStatus,
 };

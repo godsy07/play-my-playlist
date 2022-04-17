@@ -16,6 +16,7 @@ import { DATA_URL } from "../..";
 const PlayerDashboard = ({
   GameStatus,
   roomID,
+  roomObjID,
   hostName,
   hostProfilePic,
   roomDetails,
@@ -213,7 +214,7 @@ const PlayerDashboard = ({
               </Row>
             ))}
         </Container>
-        <button className='start-game-button' onClick={onClickStartGame}>
+        <button className='start-game-button' onClick={(e) => onClickStartGame(e,roomObjID)}>
           START GAME
         </button>
       </div>

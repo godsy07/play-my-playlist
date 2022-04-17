@@ -43,6 +43,7 @@ const GameRoom = ({
   toggleVideo,
   handleCollectVotes,
   handleCheckResults,
+  handleNextSong,
   handleVotingPlayer,
 }) => {
   return (
@@ -266,6 +267,8 @@ const GameRoom = ({
                     handleCollectVotes();
                   } else if (GameEvent === "results") {
                     handleCheckResults();
+                  } else if (GameEvent === "next") {
+                    handleNextSong();
                   }
                 }}
               >

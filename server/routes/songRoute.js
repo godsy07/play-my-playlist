@@ -10,6 +10,7 @@ router.post("/get-player-songs", SongController.getPlayerSongs);
 router.post("/get-songbyID", SongController.getPlayerSongs);
 router.post("/get-random-room-song", SongController.chooseRandomRoomSong);
 router.post("/vote-player", SongController.votePlayer);
+router.post("/check-all-votes", SongController.checkAllVotes);
 router.post("/fetch-player-vote", SongController.fetchUserVote);
 router.post("/fetch-voted-players", SongController.fetchVotedPlayers);
 router.post("/fetch-players-scores", SongController.fetchPlayersScores);
