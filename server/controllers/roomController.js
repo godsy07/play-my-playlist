@@ -245,7 +245,10 @@ const resetRoomSongsStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: error.details[0].message });
     }
 
-    return res.status(200).json({ success: true, message: "Room song status successfully reseted." });
+    const updateSongsStatus = await songModel.updateMany({ room_id }, { song_status: "not_played" });
+    // const deleteVotes = await voteModel.deleteMany({ room_id });
+
+    return res.status(200).json({ success: true, updateSongsStatus, message: "Room song status successfully been reset." });
   } catch(error) {
     return res.status(500).json({ success: false, message: "Something went wrong in server." });
   }

@@ -223,30 +223,33 @@ const GameRoom = ({
                 </>
               ) : (
                 showScoreboard === "show_scores" && (
-                  <div className='w-100 h-100 d-flex justify-content-center align-items-center'>
-                    <Table striped bordered hover>
-                      <thead>
-                        <tr>
-                          <th>Sl.No.</th>
-                          <th>Player Name</th>
-                          <th>Voted Player</th>
-                          <th>Scores</th>
-                          <th>Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {scoresData.map((score, index) => (
-                          <tr key={index}>
-                            <td>{index + 1}</td>
-                            <td>{score.player.name}</td>
-                            <td>{score.voted_player.name}</td>
-                            <td>{score.current_points}</td>
-                            <td>{score.score_points.points}</td>
+                  <>
+                    <h2 className="mb-2 text-center">Game Scores</h2>
+                    <div className='w-100 h-100 d-flex justify-content-center align-items-center'>
+                      <Table striped bordered hover>
+                        <thead>
+                          <tr>
+                            <th>Sl.No.</th>
+                            <th>Player Name</th>
+                            <th>Voted Player</th>
+                            <th>Scores</th>
+                            <th>Total</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {scoresData.map((score, index) => (
+                            <tr key={index}>
+                              <td>{index + 1}</td>
+                              <td>{score.player.name}</td>
+                              <td>{score.voted_player.name}</td>
+                              <td>{score.current_points}</td>
+                              <td>{score.score_points.points}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    </div>
+                  </>
                 )
               )}
               <Button

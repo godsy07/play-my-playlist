@@ -172,7 +172,10 @@ const chooseRandomRoomSong = async (req, res) => {
 
     console.log("room_id");
     console.log(room_id);
-    const songsData = await songModel.find({ room_id, song_status: "not_played" });
+    const songsData = await songModel.find({
+      room_id,
+      song_status: "not_played",
+    });
     // const songsCount = await songModel.where({ room_id: room_id }).count();
 
     let song_index = Math.floor(Math.random() * songsData.length); // find a rondom index number for songsData
@@ -215,10 +218,12 @@ const votePlayer = async (req, res) => {
       message = error.details[0].message;
       return res.status(400).json({ success: false, message });
     }
-    
+
     // Check the player cannot vote themselves
     if (player_id === voted_player_id) {
-      return res.status(400).json({ success: false, message: "You cannot vote yourself." });
+      return res
+        .status(400)
+        .json({ success: false, message: "You cannot vote yourself." });
     }
 
     let points = 0,
@@ -226,9 +231,9 @@ const votePlayer = async (req, res) => {
 
     const songData = await songModel.find({ _id: song_id });
     let voteData = await voteModel.find({ room_id, player_id, song_id });
-    
+
     let scoreDetails = await scorePointModel.find({ room_id, player_id });
-    
+
     //Fetch voted user Details
     votedUserData = await userModel.find({ _id: voted_player_id });
 
@@ -243,6 +248,7 @@ const votePlayer = async (req, res) => {
       points = 10;
     }
 
+    let earlier_voted_player = "";
     if (voteData.length === 0) {
       voteData = await voteModel.create({
         room_id,
@@ -251,46 +257,97 @@ const votePlayer = async (req, res) => {
         song_id,
         current_points: points,
       });
-      
+
+      // if (voted_player_id != songData[0].player_id && scoreDetails.length !== 0) {
+      //   // if voted is not right, remain same
+      //   points = scoreDetails[0].points;
+      //   console.log("voted wrong player, no change");
+      // } else if (voted_player_id == songData[0].player_id && scoreDetails.length !== 0) {
+      //   // if voted is right, add 10 points
+      //   points = scoreDetails[0].points + 10;
+      //   console.log("voted right player, add 10 points");
+      // }
     } else {
+      earlier_voted_player = voteData[0].voted_player_id;
       await voteModel.update(
         { room_id, player_id, song_id },
         { voted_player_id, current_points: points }
       );
-      
-      console.log("scoreDetails");
-      console.log(scoreDetails);
-      console.log("points before");
-      console.log(points);
-      
-      if (voteData[0].current_points == 10 && voted_player_id == songData[0].player_id) {
-        points = scoreDetails[0].points;
-        console.log("points no change");
-      } else if (voteData[0].current_points == 10 && voted_player_id != songData[0].player_id) {
-        points = scoreDetails[0].points - 10;
-        console.log("points subtract");
-      }
-      console.log("points after");
-      console.log(points);
-      voteData = await voteModel.find({ room_id, player_id, song_id });
-      
-    }
-    
-    if (scoreDetails.length === 0) {
-      
-      scoreData = await scorePointModel.create({ room_id, player_id, points });
 
+      // console.log("scoreDetails");
+      // console.log(scoreDetails);
+      // console.log("points before");
+      // console.log(points);
+
+      // if (earlier_voted_player == voted_player_id && scoreDetails.length !== 0) {
+      //   // (earlier_voted_player != songData[0].player_id || earlier_voted_player == songData[0].player_id)
+      //   // if earlier voted is same as now and was right or wrong, the points remain same
+      //   points = scoreDetails[0].points;
+      //   console.log("voted same player, no change");
+      // } else if (earlier_voted_player != songData[0].player_id && voted_player_id != songData[0].player_id && scoreDetails.length !== 0) {
+      //   // if earlier voted is not same as now and is not right, remain same
+      //   points = scoreDetails[0].points;
+      //   console.log("voted wrong player, no change");
+      // } else if (earlier_voted_player != songData[0].player_id && voted_player_id == songData[0].player_id && scoreDetails.length !== 0) {
+      //   // if earlier voted is not same as now and is right, add 10 points
+      //   points = scoreDetails[0].points + 10;
+      //   console.log("voted right player, add 10 points");
+      // }
+      // console.log("points after");
+      // console.log(points);
+      voteData = await voteModel.find({ room_id, player_id, song_id });
+    }
+
+    if (scoreDetails.length === 0) {
+      scoreData = await scorePointModel.create({ room_id, player_id, points });
     } else {
+      console.log("original points");
+      console.log(points);
+
+      if (earlier_voted_player.length == 0) {
+        if (voted_player_id != songData[0].player_id) {
+          // if voted is not right, remain same
+          points = scoreDetails[0].points;
+          console.log("voted wrong player, no change");
+        } else if (voted_player_id == songData[0].player_id) {
+          // if voted is right, add 10 points
+          points = scoreDetails[0].points + 10;
+          console.log("voted right player, add 10 points");
+        }
+      } else {
+        if (
+          earlier_voted_player == voted_player_id &&
+          voted_player_id != songData[0].player_id
+        ) {
+          // (earlier_voted_player != songData[0].player_id || earlier_voted_player == songData[0].player_id)
+          // if earlier voted is same as now and was right or wrong, the points remain same
+          points = scoreDetails[0].points;
+          console.log("voted same player or voted wrong player, no change");
+        // } else if (
+        //   earlier_voted_player == songData[0].player_id &&
+        //   voted_player_id != songData[0].player_id
+        // ) {
+        //   // if earlier voted is not same as now and is right, add 10 points
+        //   points = scoreDetails[0].points - 10;
+        //   console.log("voted right player, remove 10 points");
+        } else if (
+          earlier_voted_player != songData[0].player_id &&
+          voted_player_id == songData[0].player_id
+        ) {
+          // if earlier voted is not same as now and is right, add 10 points
+          points = scoreDetails[0].points + 10;
+          console.log("voted right player, add 10 points");
+        }
+      }
 
       console.log("points increment");
-      console.log(points)
-      
+      console.log(points);
+
       scoreData = await scorePointModel.findOneAndUpdate(
         { room_id, player_id },
         { points },
         { new: true }
       );
-
     }
 
     return res.status(200).json({
@@ -304,46 +361,47 @@ const votePlayer = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Some error occurred in server." });
-    }
-  };
-  
-  // check all users have voted or not
-  const checkAllVotes = async (req, res) => {
-    try {
-      const { room_id, song_id } = req.body;
-
-      const schema = Joi.object({
-        room_id: Joi.string().min(4).required().label("Room ID"),
-        song_id: Joi.string().required().label("Song"),
-      });
-      // Validation of details recieved starts here
-      const validate = schema.validate({ room_id, song_id });
-      const { error } = validate;
-      if (error) {
-        message = error.details[0].message;
-        return res.status(400).json({ success: false, message });
-      }
-
-      let checkVotesCount = await voteModel.find({ room_id, song_id }).count();
-      let roomPlayersCount = await userModel.find({ active_room: room_id }).count();
-      
-      if (checkVotesCount < roomPlayersCount) {
-        return res
-          .status(400)
-          .json({ success: false, message: "All players have not voted." });
-      } else {
-        return res
-          .status(200)
-          .json({ success: true, message: "All players have voted." });
-      }
-
-    } catch(error) {
-      console.log(error);
-      return res
-        .status(500)
-        .json({ success: false, message: "Some error occurred in server." });
   }
-}
+};
+
+// check all users have voted or not
+const checkAllVotes = async (req, res) => {
+  try {
+    const { room_id, song_id } = req.body;
+
+    const schema = Joi.object({
+      room_id: Joi.string().min(4).required().label("Room ID"),
+      song_id: Joi.string().required().label("Song"),
+    });
+    // Validation of details recieved starts here
+    const validate = schema.validate({ room_id, song_id });
+    const { error } = validate;
+    if (error) {
+      message = error.details[0].message;
+      return res.status(400).json({ success: false, message });
+    }
+
+    let checkVotesCount = await voteModel.find({ room_id, song_id }).count();
+    let roomPlayersCount = await userModel
+      .find({ active_room: room_id })
+      .count();
+
+    if (checkVotesCount < roomPlayersCount) {
+      return res
+        .status(400)
+        .json({ success: false, message: "All players have not voted." });
+    } else {
+      return res
+        .status(200)
+        .json({ success: true, message: "All players have voted." });
+    }
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Some error occurred in server." });
+  }
+};
 
 // Route for voting a particular player
 const fetchUserVote = async (req, res) => {
@@ -419,14 +477,12 @@ const fetchVotedPlayers = async (req, res) => {
     // Fetch voted info (like songName, players_ids) from db
     // const votedData = await voteModel.find({ room_id, song_id }); // also fetch scores with it
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        // votedData,
-        votedPlayers,
-        message: "Successfully fetched voted info",
-      });
+    return res.status(200).json({
+      success: true,
+      // votedData,
+      votedPlayers,
+      message: "Successfully fetched voted info",
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -512,53 +568,104 @@ const fetchPlayersVoteStatus = async (req, res) => {
       },
     ]);
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        votedPlayers,
-        message: "Fetched player vote status.",
-      });
+    return res.status(200).json({
+      success: true,
+      votedPlayers,
+      message: "Fetched player vote status.",
+    });
   } catch (error) {
     console.log(error);
     return res
       .status(500)
       .json({ success: false, message: "Something went wrong in server." });
+  }
+};
+
+const changeSongStatus = async (req, res) => {
+  try {
+    const { room_id, song_id, status } = req.body;
+
+    const schema = Joi.object({
+      room_id: Joi.string().min(4).required().label("Room ID"),
+      song_id: Joi.string().min(4).required().label("Song ID"),
+      status: Joi.string().valid("not_played", "played").label("Song ID"),
+    });
+    // Validation of details recieved starts here
+    const validate = schema.validate({ room_id, song_id });
+    const { error } = validate;
+    if (error) {
+      message = error.details[0].message;
+      return res.status(400).json({ success: false, message });
     }
-  };
-  
-  const changeSongStatus = async (req, res) => {
-    try {
-      const { room_id, song_id, status } = req.body;
 
-      const schema = Joi.object({
-        room_id: Joi.string().min(4).required().label("Room ID"),
-        song_id: Joi.string().min(4).required().label("Song ID"),
-        status: Joi.string().valid("not_played","played").label("Song ID"),
-      });
-      // Validation of details recieved starts here
-      const validate = schema.validate({ room_id, song_id });
-      const { error } = validate;
-      if (error) {
-        message = error.details[0].message;
-        return res.status(400).json({ success: false, message });
-      }
-      
-      let songData = await songModel.find({ room_id, song_id });
-      
-      if (songData.length === 0) {
-        return res.status(400).json({ success: false, message: "Data does not exist." });
-      }
+    let songData = await songModel.find({ room_id, song_id });
 
-      songData = await songModel.update({ room_id, _id: song_id },{ song_status: status });
-
+    if (songData.length === 0) {
       return res
+        .status(400)
+        .json({ success: false, message: "Data does not exist." });
+    }
+
+    songData = await songModel.update(
+      { room_id, _id: song_id },
+      { song_status: status }
+    );
+
+    return res
       .status(200)
-      .json({ success: true, message: "Song status successfully changed."});
-    } catch(error) {
+      .json({ success: true, message: "Song status successfully changed." });
+  } catch (error) {
     return res
       .status(500)
       .json({ success: false, message: "Something went wrong in server." });
+  }
+};
+
+const fetchRoomScores = async (req, res) => {
+  try {
+    const { room_id } = req.body;
+
+    const schema = Joi.object({
+      room_id: Joi.string().min(4).required().label("Room ID"),
+    });
+    // Validation of details recieved starts here
+    const validate = schema.validate({ room_id });
+    const { error } = validate;
+    if (error) {
+      message = error.details[0].message;
+      return res.status(400).json({ success: false, message });
+    }
+
+    let scoreData = await userModel.aggregate([
+      { $match: { active_room: ObjectId(room_id) } },
+      {
+        $lookup: {
+          from: "score_points",
+          localField: "active_room",
+          foreignField: "room_id",
+          localField: "_id",
+          foreignField: "player_id",
+          as: "score_points",
+        },
+      },
+      { $unwind: "$score_points" },
+      {
+        $project: {
+          "name": 1,
+          "score_points.points": 1,
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      scoreData,
+      message: "Player scores successfully fetched.",
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Some error occured in the server." });
   }
 }
 
@@ -611,16 +718,16 @@ const fetchPlayersScores = async (req, res) => {
           from: "users",
           localField: "player_id",
           foreignField: "_id",
-          as: "player"
-        }
+          as: "player",
+        },
       },
       {
         $lookup: {
           from: "users",
           localField: "voted_player_id",
           foreignField: "_id",
-          as: "voted_player"
-        }
+          as: "voted_player",
+        },
       },
       {
         $lookup: {
@@ -629,8 +736,8 @@ const fetchPlayersScores = async (req, res) => {
           foreignField: "room_id",
           localField: "player_id",
           foreignField: "player_id",
-          as: "score_points"
-        }
+          as: "score_points",
+        },
       },
       { $unwind: "$player" },
       { $unwind: "$voted_player" },
@@ -659,17 +766,15 @@ const fetchPlayersScores = async (req, res) => {
           "score_points.room_id": 0,
           "score_points.createdAt": 0,
           "score_points.updatedAt": 0,
-        }
-      }
+        },
+      },
     ]);
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        scoreData,
-        message: "Player scores successfully fetched.",
-      });
+    return res.status(200).json({
+      success: true,
+      scoreData,
+      message: "Player scores successfully fetched.",
+    });
   } catch (error) {
     return res
       .status(500)
@@ -692,4 +797,5 @@ module.exports = {
   fetchPlayersVoteStatus,
   changeSongStatus,
   fetchPlayersScores,
+  fetchRoomScores,
 };

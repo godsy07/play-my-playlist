@@ -14,6 +14,7 @@ router.post("/check-all-votes", SongController.checkAllVotes);
 router.post("/fetch-player-vote", SongController.fetchUserVote);
 router.post("/fetch-voted-players", SongController.fetchVotedPlayers);
 router.post("/fetch-players-scores", SongController.fetchPlayersScores);
+router.post("/fetch-room-scores", SongController.fetchRoomScores);
 router.post("/check-vote-status", SongController.fetchPlayersVoteStatus);
 router.post("/change-song-status", SongController.changeSongStatus);
 

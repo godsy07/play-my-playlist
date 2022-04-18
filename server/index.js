@@ -194,6 +194,7 @@ io.on("connection", (socket) => {
       // removeVotedStatus(user.room_id);
       io.to(user.room_id).emit("recieve-song", {
         song_details,
+        room_id,
       });
       // io.to(user.room_id).emit("roomUsers", {
       //   room_id: user.room_id,

@@ -289,6 +289,7 @@ const Dashboard = (props) => {
         if (game_status === true) {
           setGameEvent("start");
           setGameStatus("started");
+          resetRoomSongs(roomObjID);
           handlePickRandomSong(roomObjID);
           setToastData({
             title: "Success",
@@ -301,7 +302,7 @@ const Dashboard = (props) => {
         }
       });
 
-      socket.on("recieve-song", ({ song_details }) => {
+      socket.on("recieve-song", ({ song_details, room_id }) => {
         console.log("recieve-song");
         console.log(song_details)
         if (song_details) {
@@ -311,6 +312,7 @@ const Dashboard = (props) => {
         } else {
           setCurrentSongID("");
           setCurrentSong("");
+          fetchRoomScores(room_id);
           setGameEvent("finish");
         }
       });
@@ -417,6 +419,58 @@ const Dashboard = (props) => {
     });
   };
 
+  const fetchRoomScores = async (room_id) => {
+    try {
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/song/fetch-room-scores`,
+        {
+          room_id,
+        }
+      );
+      console.log("Fetch scores of the room");
+      if (response.status === 200) {
+        console.log(response.data);
+        setScoresData(response.data.scoreData);
+        setShowScoreboard("show_scores"); // Show scoreboard
+      } else {
+        setToastData({
+          title: "Wait...",
+          message: response.data.message,
+          type: "warning",
+          time: new Date(),
+        });
+        setShowToast(true);
+      }
+      // check votes to display scoreboard
+      // then fetch new song if exists, or display exiyt room option
+    } catch (error) {
+      if (error.response) {
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
+    }
+  }
+
+  const resetRoomSongs = async (room_id) => {
+    try {
+      const response = await axios.post(`${DATA_URL}/playlist/api/room/reset-room-songs-status`, {
+        room_id
+      });
+
+      if (response.status === 200) {
+        console.log("Reset Songs status");
+        console.log(response);
+      }
+
+    } catch(error) {
+      if (error.response) {
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
+    }
+  }
   // Check player vote status
   const checkPlayerVotedStatus = async (room_id, song_id) => {
     try {
@@ -878,6 +932,7 @@ const Dashboard = (props) => {
         // emit event to socketIO
         socket.emit("send-random-song", {
           song_details: response.data.randomSong,
+          room_id,
         });
         // Swal.fire({
         //   icon: "success",
