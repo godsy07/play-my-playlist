@@ -187,7 +187,7 @@ io.on("connection", (socket) => {
       }
     });
 
-  socket.on("send-random-song", ({ song_details }) => {
+  socket.on("send-random-song", ({ song_details, room_id }) => {
     // console.log(song_details);
     const user = getUser(socket.id);
     if (user) {
