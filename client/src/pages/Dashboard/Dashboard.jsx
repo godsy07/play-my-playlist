@@ -1098,7 +1098,9 @@ const Dashboard = (props) => {
       <>
         <Modal
           // size="lg"
+          backdrop="static"
           show={showPlaySong}
+          keyboard={false}
           onHide={() => setShowPlaySong(false)}
         >
           <Modal.Header closeButton>
