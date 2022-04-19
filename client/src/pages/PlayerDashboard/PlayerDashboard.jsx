@@ -155,6 +155,7 @@ const PlayerDashboard = ({
                 variant='light'
                 className='d-flex w-100 justify-content-center align-items-center'
                 onClick={onClickAddSong}
+                title="Add Song"
               >
                 <FaPlusCircle className='me-1 text-success' size={22} />
                 ADD
@@ -207,6 +208,7 @@ const PlayerDashboard = ({
                     variant='danger'
                     className='d-flex w-100 justify-content-center align-items-center'
                     onClick={(e) => onClickRemoveSong(e, song._id, song.song)}
+                    title="Delete Song"
                   >
                     <FaTrashAlt className='ms-1' size={22} />
                     REMOVE

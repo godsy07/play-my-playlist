@@ -344,20 +344,7 @@ const Dashboard = (props) => {
         } else if (game_event === "exit") {
           // console.log("Game ends here");
           console.log("Time to exit");
-          Swal.fire({
-            title: "Do you really want to exit?",
-            showDenyButton: true,
-            confirmButtonText: "Yes",
-            denyButtonText: `No`,
-          }).then((result) => {
-            if (result.isConfirmed) {
-              history.push("/joinRoom");
-              return;
-            } else if (result.isDenied) {
-              return;
-            }
-          });
-          // history.push("/joinRoom");
+          history.push("/joinRoom");
         }
       })
 
@@ -372,8 +359,11 @@ const Dashboard = (props) => {
 
       socket.on(
         "fetchVoters",
-        async ({ song_id }) => {
+        async ({ song_id, room_players }) => {
           console.log("fetchVoters");
+          console.log(room_players);
+          // Need to uncomment below line after fixing the query
+          // setRoomPlayers(room_players);
           await fetchVotedPlayers(roomObjID, song_id);
         }
       );
@@ -481,6 +471,30 @@ const Dashboard = (props) => {
     }
   }
 
+  // Delete room votes, scores and save highscores, change song status to "not_played" before exiting the room
+  const deleteRoomVotes = async (room_id) => {
+    try {
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/room//delete-room-current-data`,
+        {
+          room_id,
+        }
+      );
+      
+      if (response.status === 200) {
+        console.log("Delete room details before exiting");
+        console.log(response);
+      }
+
+    } catch (error) {
+      if (error.response) {
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
+    }
+  }
+
   const resetRoomSongs = async (room_id) => {
     try {
       const response = await axios.post(`${DATA_URL}/playlist/api/room/reset-room-songs-status`, {
@@ -508,25 +522,12 @@ const Dashboard = (props) => {
         {
           room_id,
           song_id,
-          // room_id: roomObjID,
-          // song_id: currentSongID,
         }
       );
 
       if (response.status === 200) {
         console.log("checking player voted status");
-        // console.log(response);
-        // console.log("players");
-        // console.log(roomPlayers);
         setVotedData(response.data.votedPlayers);
-        // let tempArr;
-        // roomPlayers.forEach((data) => {
-        //   let tempObj = {};
-        //   // if this player exists in voted list, then add their details
-        //   response.data.votedPlayers.find(item => {
-        //     if (data._id === item.) {}
-        //   }) 
-        // })
       }
 
     } catch(error) {
@@ -687,9 +688,24 @@ const Dashboard = (props) => {
   }
   const handleExitRoom = () => {
     if (hostID === userID) {
-      socket.emit("game_event",{
-        game_event: "exit",
-        room_obj_id: roomObjID
+      Swal.fire({
+        title: "Do you really want to exit?",
+        showDenyButton: true,
+        confirmButtonText: "Yes",
+        denyButtonText: `No`,
+      }).then((result) => {
+        if (result.isConfirmed) {
+          deleteRoomVotes(roomObjID);
+          
+          socket.emit("game_event",{
+            game_event: "exit",
+            room_obj_id: roomObjID
+          });
+
+          return;
+        } else if (result.isDenied) {
+          return;
+        }
       });
       // delete votes and store scores in some other collection (i.e. high_scores) then delete scores for the room in score_points
     } else {
@@ -1053,6 +1069,7 @@ const Dashboard = (props) => {
         await socket.emit("player-vote", {
           song_id: song_id,
           voted_player_id: voted_player_id,
+          room_players: response.data.roomUsers,
         });
       }
 

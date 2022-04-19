@@ -11,5 +11,6 @@ router.post("/get-room-details", RoomController.getRoomDetails);
 router.post("/get-room-users", RoomController.getRoomUsers);
 router.post("/start-game", RoomController.startGameRoom);
 router.post("/reset-room-songs-status", RoomController.resetRoomSongsStatus);
+router.post("/delete-room-current-data", RoomController.deleteRoomVotes);
 
 module.exports = router;

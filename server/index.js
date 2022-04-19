@@ -210,11 +210,11 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("player-vote", ({ song_id }) => {
+  socket.on("player-vote", ({ song_id, room_players }) => {
     const user = getUser(socket.id);
     if (user) {      
       // Send the updated data after adding the voted details of the player
-      io.to(user.room_id).emit("fetchVoters", { song_id });
+      io.to(user.room_id).emit("fetchVoters", { song_id, room_players });
 
       io.to(user.room_id).emit("notification", {
         success: true,
