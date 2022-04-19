@@ -649,6 +649,7 @@ const fetchRoomScores = async (req, res) => {
         },
       },
       { $unwind: "$score_points" },
+      { $sort: { "name": 1 } },
       {
         $project: {
           "name": 1,
@@ -697,19 +698,26 @@ const fetchPlayersScores = async (req, res) => {
         .json({ success: false, message: "All users have not voted." });
     }
 
-    // let scoreData = await scorePointModel.find({ room_id });
-    // let scoreData = await scorePointModel.aggregate([
-    //   { $match: { room_id: ObjectId(room_id) } },
-    //   {
-    //     $lookup: {
-    //       from: "users",
-    //       localField: "player_id",
-    //       foreignField: "_id",
-    //       as: "player"
-    //     }
-    //   },
-    //   { $unwind: "$player" },
-    // ]);
+    const songData = await songModel.aggregate([
+      {$match: { room_id: ObjectId(room_id), _id: ObjectId(song_id) } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "player_id",
+          foreignField: "_id",
+          as: "player"
+        }
+      },
+      { $unwind: "$player" },
+      {
+        $project: {
+          "_id": 1,
+          "song": 1,
+          "player._id": 1,
+          "player.name": 1,
+        }
+      }
+    ]);
 
     let scoreData = await voteModel.aggregate([
       { $match: { room_id: ObjectId(room_id), song_id: ObjectId(song_id) } },
@@ -742,6 +750,7 @@ const fetchPlayersScores = async (req, res) => {
       { $unwind: "$player" },
       { $unwind: "$voted_player" },
       { $unwind: "$score_points" },
+      { $sort: { "player.name": 1 } },
       {
         $project: {
           "player._id": 0,
@@ -772,6 +781,7 @@ const fetchPlayersScores = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      songData,
       scoreData,
       message: "Player scores successfully fetched.",
     });

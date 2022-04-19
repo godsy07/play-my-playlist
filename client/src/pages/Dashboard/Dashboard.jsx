@@ -10,7 +10,9 @@ import {
   ToastContainer,
   ToastHeader,
   Toast,
+  Modal,
 } from "react-bootstrap";
+import ReactPlayer from 'react-player';
 import axios from "axios";
 import Peer from "peerjs";
 import io from "socket.io-client";
@@ -78,10 +80,15 @@ const Dashboard = (props) => {
 
   const [showScoreboard, setShowScoreboard] = useState("hide");
   const [scoresData, setScoresData] = useState([]);
+  const [answerData, setAnswerData] = useState([]);
+  const [roomScores, setRoomScores] = useState(false);
   const [allPlayersVoted, setAllPlayersVoted] = useState(false);
   const [toastData, setToastData] = useState(null);
   // const [notifyData, setNotifyData] = useState(null);
   const [showToast, setShowToast] = useState(false);
+  
+  const [showPlaySong, setShowPlaySong] = useState(false);
+  const [songURL, setSongURL] = useState("");
   
   const [showVoteCollectModal,setShowVoteCollectModal] = useState(false);
 
@@ -330,6 +337,27 @@ const Dashboard = (props) => {
           if (status) {
             setGameEvent("start");
           }
+        } else if (game_event === "end") {
+          setGameEvent("end");
+          setShowScoreboard("hide");
+          fetchRoomScores(room_id);
+        } else if (game_event === "exit") {
+          // console.log("Game ends here");
+          console.log("Time to exit");
+          Swal.fire({
+            title: "Do you really want to exit?",
+            showDenyButton: true,
+            confirmButtonText: "Yes",
+            denyButtonText: `No`,
+          }).then((result) => {
+            if (result.isConfirmed) {
+              history.push("/joinRoom");
+              return;
+            } else if (result.isDenied) {
+              return;
+            }
+          });
+          // history.push("/joinRoom");
         }
       })
 
@@ -430,6 +458,7 @@ const Dashboard = (props) => {
       console.log("Fetch scores of the room");
       if (response.status === 200) {
         console.log(response.data);
+        setRoomScores(true);
         setScoresData(response.data.scoreData);
         setShowScoreboard("show_scores"); // Show scoreboard
       } else {
@@ -523,6 +552,7 @@ const Dashboard = (props) => {
       if (response.status === 200) {
         console.log(response.data);
         setScoresData(response.data.scoreData);
+        setAnswerData(response.data.songData);
         setShowScoreboard("show_scores"); // Show scoreboard
       } else {
         setToastData({
@@ -629,6 +659,39 @@ const Dashboard = (props) => {
         game_event: "start",
         room_obj_id: roomObjID
       });
+    } else {
+      setToastData({
+        title: "Oops...",
+        message: "Action allowed only to room host",
+        type: "warning",
+        time: new Date(),
+      });
+      setShowToast(true);
+    }
+  }
+  const handleFinishGame = () => {
+    if (hostID === userID) {
+      socket.emit("game_event",{
+        game_event: "end",
+        room_obj_id: roomObjID
+      });
+    } else {
+      setToastData({
+        title: "Oops...",
+        message: "Action allowed only to room host",
+        type: "warning",
+        time: new Date(),
+      });
+      setShowToast(true);
+    }
+  }
+  const handleExitRoom = () => {
+    if (hostID === userID) {
+      socket.emit("game_event",{
+        game_event: "exit",
+        room_obj_id: roomObjID
+      });
+      // delete votes and store scores in some other collection (i.e. high_scores) then delete scores for the room in score_points
     } else {
       setToastData({
         title: "Oops...",
@@ -1011,6 +1074,13 @@ const Dashboard = (props) => {
       }
     }
   };
+  
+  const handlePlaySong = async (e,song_link) => {
+    e.preventDefault();
+    console.log("Play song on player");
+    setSongURL(song_link);
+    setShowPlaySong(true);
+  }
 
   return (
     <div className='main-container'>
@@ -1022,7 +1092,25 @@ const Dashboard = (props) => {
         userInfo={props.userInfo}
       />
 
-      {/* <button onClick={() => setNotifyData({ title: "Success", message: "This is a test message...!!!" })}>test</button> */}
+      {/* <Button variant="primary" onClick={() => setShowPlaySong(true)}>
+        Custom Width Modal
+      </Button> */}
+      <>
+        <Modal
+          // size="lg"
+          show={showPlaySong}
+          onHide={() => setShowPlaySong(false)}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>
+              Play Song
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="d-flex justify-content-center align-items-center">
+            <ReactPlayer url={songURL.length !== 0 ? songURL : 'https://www.youtube.com/watch?v=ysz5S6PUM-U'} controls={true} style={{ maxWidth: "400px" }} />
+          </Modal.Body>
+        </Modal>
+      </>
 
       <PlayerDashboard
         GameStatus={GameStatus}
@@ -1033,6 +1121,7 @@ const Dashboard = (props) => {
         roomDetails={roomDetails}
         roomPlayers={roomPlayers}
         songLink={songLink}
+        handlePlaySong={handlePlaySong}
         songsList={PlayerSongsList}
         streamVideo={streamVideo}
         passAudio={passAudio}
@@ -1062,12 +1151,17 @@ const Dashboard = (props) => {
         roomPlayers={roomPlayers}
         currentSongID={currentSongID}
         currentSong={currentSong}
+        handlePlaySong={handlePlaySong}
         scoresData={scoresData}
+        answerData={answerData}
+        roomScores={roomScores}
         showScoreboard={showScoreboard}
         fetchPlayerScores={fetchScores}
         handleCollectVotes={handleCollectVotes}
         handleCheckResults={handleCheckResults}
         handleNextSong={handleNextSong}
+        handleFinishGame={handleFinishGame}
+        handleExitRoom={handleExitRoom}
         streamVideo={streamVideo}
         passAudio={passAudio}
         passVideo={passVideo}

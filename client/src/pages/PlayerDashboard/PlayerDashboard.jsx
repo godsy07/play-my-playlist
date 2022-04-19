@@ -22,6 +22,7 @@ const PlayerDashboard = ({
   roomDetails,
   roomPlayers,
   songLink,
+  handlePlaySong,
   songsList,
   onChangeSongLink,
   showRules,
@@ -197,7 +198,7 @@ const PlayerDashboard = ({
                       disabled
                     />
                     <InputGroup.Text className='px-1'>
-                      <FaPlay style={{ fontSize: "24px", width: "50px" }} />
+                      <FaPlay  onClick={(e) => handlePlaySong(e,song.song)} style={{ fontSize: "24px", width: "50px" }} />
                     </InputGroup.Text>
                   </InputGroup>
                 </Col>
