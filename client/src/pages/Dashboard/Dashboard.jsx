@@ -51,6 +51,7 @@ const Dashboard = (props) => {
   const [GameEvent, setGameEvent] = useState("start");
   const [joinRoomStatus, setJoinRoomStatus] = useState(false);
   const [userID, setUserID] = useState("");
+  const [userData, setUserData] = useState(null); // Only for voting purposes
   const [roomID, setRoomID] = useState(room_id);
   const [roomObjID, setObjRoomID] = useState(id);
   const [roomPlayers, setRoomPlayers] = useState([]);
@@ -326,7 +327,9 @@ const Dashboard = (props) => {
 
       socket.on("change_game_event", ({ game_event, song_id, room_obj_id }) => {
         console.log("next game event")
-        if (game_event === "results") {
+        if (game_event === "collect") {
+          setGameEvent("collect");
+        } else if (game_event === "results") {
           setGameEvent("results");
         } else if (game_event === "next") {
           setGameEvent("next");
@@ -359,12 +362,12 @@ const Dashboard = (props) => {
 
       socket.on(
         "fetchVoters",
-        async ({ song_id, room_players }) => {
+        async ({ player_id, room_players }) => {
           console.log("fetchVoters");
           console.log(room_players);
           // Need to uncomment below line after fixing the query
-          // setRoomPlayers(room_players);
-          await fetchVotedPlayers(roomObjID, song_id);
+          setRoomPlayers(room_players);
+          // await fetchVotedPlayers(roomObjID, song_id);
         }
       );
 
@@ -586,7 +589,6 @@ const Dashboard = (props) => {
         }
       );
       if (response.status === 200) {
-        
         // setToastData({
         //   title: "Success",
         //   message: response.data.message,
@@ -600,20 +602,30 @@ const Dashboard = (props) => {
       return false;
     } catch (error) {
       if (error.response) {
-        console.log(error.response);
+        // console.log(error.response);
+        setToastData({
+          title: "Error",
+          message: error.response.data.message,
+          type: "error",
+          time: new Date(),
+        });
+        setShowToast(true);
       } else {
         console.log(error);
       }
       return false;
     }
   };
-
-  const handleCollectVotes = async () => {
+  
+  const handleVotes = async () => {
     if (hostID === userID) {
+      changeSongStatus("played");
+      setShowVoteCollectModal(false);
+      
       let all_voted = await checkAllVotes();
       if (all_voted) {
         socket.emit("game_event",{
-          game_event: "results",
+          game_event: "collect",
         });
       } else {
         setToastData({
@@ -625,6 +637,34 @@ const Dashboard = (props) => {
         setShowToast(true);
 
       }
+    } else {
+      setToastData({
+        title: "Oops...",
+        message: "Action allowed only to room host",
+        type: "warning",
+        time: new Date(),
+      });
+      setShowToast(true);
+    }
+  }
+
+  const handleCollectVotes = async () => {
+    if (hostID === userID) {
+      // let all_voted = await checkAllVotes();
+      // if (all_voted) {
+        socket.emit("game_event",{
+          game_event: "results",
+        });
+      // } else {
+      //   setToastData({
+      //     title: "Wait...",
+      //     message: "All players have not voted.",
+      //     type: "warning",
+      //     time: new Date(),
+      //   });
+      //   setShowToast(true);
+      // }
+      
     } else {
       setToastData({
         title: "Oops...",
@@ -1050,7 +1090,6 @@ const Dashboard = (props) => {
         return;
       }
 
-      console.log("handleVotingPlayer function");
       const response = await axios.post(
         `${DATA_URL}/playlist/api/song/vote-player`,
         {
@@ -1060,14 +1099,24 @@ const Dashboard = (props) => {
           player_id: userID,
         }
       );
+
       if (response.status === 200) {
+        console.log("handleVotingPlayer function");
         console.log(response);
-        setGameEvent("collect");
-        setShowVoteCollectModal(false);
         // setVotedPlayer(votedPlayer.push(userID));
+        let userVoteData = response.data.roomUsers.find(user => user._id === userID);
+        setUserData(userVoteData);
+        // console.log(userVoteData);
+
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: response.data.message,
+        });
         // Fetch votes for current song from backend using socket io by everyone
         await socket.emit("player-vote", {
           song_id: song_id,
+          // player_id: player_id,
           voted_player_id: voted_player_id,
           room_players: response.data.roomUsers,
         });
@@ -1160,8 +1209,10 @@ const Dashboard = (props) => {
       <GameRoom
         userID={userID}
         votedData={votedData}
+        userData={userData}
         votedPlayer={votedPlayer}
-        setVotedPlayer={(e) => setVotedPlayer(e.target.value)}
+        setVotedPlayer={(player_id) => setVotedPlayer(player_id)}
+        // setVotedPlayer={(e) => setVotedPlayer(e.target.value)}
         showVoteCollectModal={showVoteCollectModal}
         toggleVoteCollectModal={() => setShowVoteCollectModal(!showVoteCollectModal)}
         GameStatus={GameStatus}
@@ -1176,6 +1227,7 @@ const Dashboard = (props) => {
         roomScores={roomScores}
         showScoreboard={showScoreboard}
         fetchPlayerScores={fetchScores}
+        handleVotes={handleVotes}
         handleCollectVotes={handleCollectVotes}
         handleCheckResults={handleCheckResults}
         handleNextSong={handleNextSong}

@@ -340,8 +340,16 @@ const votePlayer = async (req, res) => {
             },
           ],
         },
+      },{
+        $lookup: {
+          from: "users",
+          localField: "vote.voted_player_id",
+          foreignField: "_id",
+          as: "voted_player",
+        },
       },
-      { $unwind: "$vote" },
+      // { $unwind: "$vote" },
+      // { $unwind: "$voted_player" },
       { $addFields: { songsCount: { $size: "$songs" } } },
       {
         $project: {
@@ -350,9 +358,20 @@ const votePlayer = async (req, res) => {
           createdAt: 0,
           updatedAt: 0,
           game_status: 0,
+          "__v": 0,
           "songs.song": 0,
           "songs.player_id": 0,
           "songs.room_id": 0,
+          "songs.song_status": 0,
+          "songs.__v": 0,
+          "voted_player.email": 0,
+          "voted_player.active_room": 0,
+          "voted_player.activation": 0,
+          "voted_player.password": 0,
+          "voted_player.createdAt": 0,
+          "voted_player.updatedAt": 0,
+          "voted_player.game_status": 0,
+          "voted_player.__v": 0,
         },
       },
     ]);

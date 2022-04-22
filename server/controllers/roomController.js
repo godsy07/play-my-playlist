@@ -189,79 +189,146 @@ const getRoomUsers = async (req, res) => {
       return res.status(400).json({ success: false, message: error.details[0].message });
     }
 
-    let roomUsers;
+    // let roomUsers;
     // const usersTest= await UserModel.where("active_room").equals(roomData[0]._id).populate('active_room');
-    if (!song_id) {
+    // if (!song_id) {
       
-      roomUsers = await UserModel.aggregate([
-        { $match: { active_room: ObjectId(room_id) } },
-        {
-          $lookup: {
-            from: 'songs',
-            localField: '_id',
-            foreignField: 'player_id',
-            as: 'songs',
-          },
-        },
-        { $addFields: {songsCount: {$size: "$songs"}}},
-        {
-          $project: {
-            "songs.song": 0,
-            "songs.player_id": 0,
-            "songs.room_id": 0,
-        }}
-      ]);
+    //   roomUsers = await UserModel.aggregate([
+    //     { $match: { active_room: ObjectId(room_id) } },
+    //     {
+    //       $lookup: {
+    //         from: 'songs',
+    //         localField: '_id',
+    //         foreignField: 'player_id',
+    //         as: 'songs',
+    //       },
+    //     },
+    //     { $addFields: {songsCount: {$size: "$songs"}}},
+    //     {
+    //       $project: {
+    //         "songs.song": 0,
+    //         "songs.player_id": 0,
+    //         "songs.room_id": 0,
+    //     }}
+    //   ]);
 
-    } else {
+    // } else {
 
-      roomUsers = await UserModel.aggregate([
-        {
-          $match: { active_room: ObjectId(room_id) }
-        },
-        {
-          $lookup: {
-            from: 'songs',
-            localField: '_id',
-            foreignField: 'player_id',
-            as: 'songs',
-          },
-        },
-        {
-          $lookup: {
-            from: 'votes',
-            as: 'vote',
-            let: { room_id: '$active_room', player_id: "$_id" },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $eq: ['$room_id', '$$room_id'] },
-                      { $eq: ['$player_id', '$$player_id'] },
-                      { $eq: ['$song_id', ObjectId(song_id)] },
-                    ]
-                  }
-                }
-              }
-            ]
-          },
-        },
-        { $unwind: "$vote" },
-        { $addFields: {songsCount: {$size: "$songs"}}},
-        {
-          $project: {
-            "activation": 0,
-            "password": 0,
-            "createdAt": 0,
-            "updatedAt": 0,
-            "game_status": 0,
-            "songs.song": 0,
-            "songs.player_id": 0,
-            "songs.room_id": 0,
-        }}
-      ]);
+    //   roomUsers = await UserModel.aggregate([
+    //     {
+    //       $match: { active_room: ObjectId(room_id) }
+    //     },
+    //     {
+    //       $lookup: {
+    //         from: 'songs',
+    //         localField: '_id',
+    //         foreignField: 'player_id',
+    //         as: 'songs',
+    //       },
+    //     },
+    //     {
+    //       $lookup: {
+    //         from: 'votes',
+    //         as: 'vote',
+    //         let: { room_id: '$active_room', player_id: "$_id" },
+    //         pipeline: [
+    //           {
+    //             $match: {
+    //               $expr: {
+    //                 $and: [
+    //                   { $eq: ['$room_id', '$$room_id'] },
+    //                   { $eq: ['$player_id', '$$player_id'] },
+    //                   { $eq: ['$song_id', ObjectId(song_id)] },
+    //                 ]
+    //               }
+    //             }
+    //           }
+    //         ]
+    //       },
+    //     },
+    //     { $unwind: "$vote" },
+    //     { $addFields: {songsCount: {$size: "$songs"}}},
+    //     {
+    //       $project: {
+    //         "activation": 0,
+    //         "password": 0,
+    //         "createdAt": 0,
+    //         "updatedAt": 0,
+    //         "game_status": 0,
+    //         "songs.song": 0,
+    //         "songs.player_id": 0,
+    //         "songs.room_id": 0,
+    //     }}
+    //   ]);
 
-    }
+    // }
+    
+    let roomUsers = await UserModel.aggregate([
+      {
+        $match: { active_room: ObjectId(room_id) },
+      },
+      {
+        $lookup: {
+          from: "songs",
+          localField: "_id",
+          foreignField: "player_id",
+          as: "songs",
+        },
+      },
+      {
+        $lookup: {
+          from: "votes",
+          as: "vote",
+          let: { room_id: "$active_room", player_id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$room_id", "$$room_id"] },
+                    { $eq: ["$player_id", "$$player_id"] },
+                    { $eq: ["$song_id", ObjectId(song_id)] },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      },{
+        $lookup: {
+          from: "users",
+          localField: "vote.voted_player_id",
+          foreignField: "_id",
+          as: "voted_player",
+        },
+      },
+      // { $unwind: "$vote" },
+      // { $unwind: "$voted_player" },
+      { $addFields: { songsCount: { $size: "$songs" } } },
+      {
+        $project: {
+          activation: 0,
+          password: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          game_status: 0,
+          "__v": 0,
+          "songs.song": 0,
+          "songs.player_id": 0,
+          "songs.room_id": 0,
+          "songs.song_status": 0,
+          "songs.__v": 0,
+          "voted_player.email": 0,
+          "voted_player.active_room": 0,
+          "voted_player.activation": 0,
+          "voted_player.password": 0,
+          "voted_player.createdAt": 0,
+          "voted_player.updatedAt": 0,
+          "voted_player.game_status": 0,
+          "voted_player.__v": 0,
+        },
+      },
+    ]);
 
     return res.status(200).json({ success: true, roomUsers, message: "Successfully fetched users of the room." });
   } catch(error) {
