@@ -675,12 +675,22 @@ const fetchRoomScores = async (req, res) => {
           as: "score_points",
         },
       },
-      { $unwind: "$score_points" },
-      { $sort: { name: 1 } },
+      // { $unwind: "$score_points" },
+      { $sort: { "score_points.points": -1 } },
       {
         $project: {
-          name: 1,
-          "score_points.points": 1,
+          activation: 0,
+          password: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          game_status: 0,
+          __v: 0,
+          "score_points._id": 0,
+          "score_points.room_id": 0,
+          "score_points.player_id": 0,
+          "score_points.createdAt": 0,
+          "score_points.updatedAt": 0,
+          "score_points.__v": 0,
         },
       },
     ]);
@@ -688,6 +698,7 @@ const fetchRoomScores = async (req, res) => {
     return res.status(200).json({
       success: true,
       scoreData,
+      topPlayer: scoreData[0],
       message: "Player scores successfully fetched.",
     });
   } catch (error) {
@@ -776,7 +787,7 @@ const fetchPlayersScores = async (req, res) => {
       },
       { $unwind: "$player" },
       { $unwind: "$voted_player" },
-      { $unwind: "$score_points" },
+      // { $unwind: "$score_points" },
       { $sort: { "player.name": 1 } },
       {
         $project: {
@@ -789,7 +800,6 @@ const fetchPlayersScores = async (req, res) => {
           "player.createdAt": 0,
           "player.updatedAt": 0,
           "player.game_status": 0,
-          "voted_player._id": 0,
           "voted_player.email": 0,
           "voted_player.active_room": 0,
           "voted_player.profile_pic_url": 0,

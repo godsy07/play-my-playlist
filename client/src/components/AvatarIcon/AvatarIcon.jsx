@@ -11,6 +11,7 @@ import {
 // import { FaRegCheckCircle } from "react-icons/fa";
 import { BiWifiOff } from "react-icons/bi";
 import thoughtCloudImage from "../../images/avatar/thought_clouds.png";
+import winnerTrophy from "../../images/avatar/winner.png";
 
 import userProfilePic from "../../images/user/user-profile.png";
 import "./avatar-icon.styles.css";
@@ -139,9 +140,9 @@ const AvatarIcon = ({
                 : statusDetails === "network-issue"
                 ? "rgb(244, 153, 61)"
                 : statusDetails === "thinking"
-                ? "#11ffee00"
+                && "#11ffee00",
                 // ? "rgb(100,100,200)"
-                : statusDetails === "winner" && "rgb(50,50,50, 0.7)",
+                // : statusDetails === "winner" && "rgb(50,50,50, 0.7)",
             color: statusDetails === "winner" && "yellow",
           }}
         >
@@ -151,9 +152,12 @@ const AvatarIcon = ({
             <BiWifiOff />
           ) : statusDetails === "thinking" ? (
             // <IoChatbubbleEllipsesOutline />
-            <Image src={thoughtCloudImage} width={35} />
+            <Image src={thoughtCloudImage} style={{ width: "300px" }} />
           ) : (
-            statusDetails === "winner" && <FaTrophy />
+            statusDetails === "winner" && (
+            // <FaTrophy />
+            <Image src={winnerTrophy} width={35} />
+            )
           )}
           {/* {statusDetails ? <FaCheck /> : <BiWifiOff />} */}
           {/* {statusDetails ? <FaRegCheckCircle /> : <BiWifiOff />} */}

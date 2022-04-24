@@ -80,6 +80,7 @@ const Dashboard = (props) => {
   const [passVideo, setPassVideo] = useState(false);
 
   const [showScoreboard, setShowScoreboard] = useState("hide");
+  const [topPlayer, setTopPlayer] = useState(null);
   const [scoresData, setScoresData] = useState([]);
   const [answerData, setAnswerData] = useState([]);
   const [roomScores, setRoomScores] = useState(false);
@@ -211,45 +212,6 @@ const Dashboard = (props) => {
         //   title: "Oops..",
         //   text: "Something went wrong.",
         // });
-      }
-    }
-  };
-  
-  const fetchVotedPlayers = async (room_id, song_id) => {
-    try {
-      const response = await axios.post(
-        `${DATA_URL}/playlist/api/song/fetch-voted-players`,
-        {
-          room_id,
-          song_id,
-        }
-      );
-
-      if (response.status === 200) {
-        console.log("fetchVotedPlayers");
-        console.log(response);
-        // Fetch voted players data with roomUsers data to mark who voted whom
-        
-        // let allVoted = true;
-        // room_users.forEach((user) => {
-        //   // turn userLeft to true, if someone has not voted (i.e. their vote data does not exist in response)
-        //   if (
-        //     !response.data.votedData.find(
-        //       (data) => data.player_id === user.user_id
-        //     )
-        //   ) {
-        //     allVoted = false;
-        //   }
-        // });
-        // setAllPlayersVoted(allVoted);
-        // fetchScores(allVoted);
-        // Loop through voted players and roomplayers to find player names to display
-      }
-    } catch (error) {
-      if (error.response) {
-        console.log(error.response);
-      } else {
-        console.log(error);
       }
     }
   };
@@ -453,6 +415,7 @@ const Dashboard = (props) => {
         console.log(response.data);
         setRoomScores(true);
         setScoresData(response.data.scoreData);
+        setTopPlayer(response.data.topPlayer);
         setShowScoreboard("show_scores"); // Show scoreboard
       } else {
         setToastData({
@@ -679,6 +642,7 @@ const Dashboard = (props) => {
   const handleCheckResults = async () => {
     if (hostID === userID) {
       changeSongStatus("played");
+      setUserData(null);
       socket.emit("game_event",{
         game_event: "next",
         song_id: currentSongID,
@@ -1208,6 +1172,7 @@ const Dashboard = (props) => {
 
       <GameRoom
         userID={userID}
+        hostID={hostID}
         votedData={votedData}
         userData={userData}
         votedPlayer={votedPlayer}
@@ -1224,6 +1189,7 @@ const Dashboard = (props) => {
         handlePlaySong={handlePlaySong}
         scoresData={scoresData}
         answerData={answerData}
+        topPlayer={topPlayer}
         roomScores={roomScores}
         showScoreboard={showScoreboard}
         fetchPlayerScores={fetchScores}
