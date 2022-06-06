@@ -2,7 +2,7 @@ const { deletePlayer } = require('./dbOperations');
 
 const users = [];
 
-const addUser = ({ id, user_id, name, room_id, songs_list, song_count }) => {
+const addUser = ({ id, user_id, name, room_id, songs_list, song_count, video_stream }) => {
   // Check if user exists with same UserID
   const existingUser = users.find(
     (user) => user.room_id === room_id && user.user_id === user_id
@@ -11,7 +11,7 @@ const addUser = ({ id, user_id, name, room_id, songs_list, song_count }) => {
     return { error: "User already exists." };
   }
   // add user to DB if does not exist
-  const user = { id, user_id, name, room_id, songs_list, song_count };
+  const user = { id, user_id, name, room_id, songs_list, song_count, video_stream };
 
   users.push(user);
 

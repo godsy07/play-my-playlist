@@ -368,7 +368,7 @@ const deleteRoomVotes = async (req, res) => {
       return res.status(400).json({ success: false, message: error.details[0].message });
     }
 
-    let scores = await scorePointModel.find({ room_id }).select("-_id room_id player_id points");
+    let scores = await scorePointModel.find({ room_id }).select("room_id player_id points");
     // console.log(scores);
 
     // Delete votes in room

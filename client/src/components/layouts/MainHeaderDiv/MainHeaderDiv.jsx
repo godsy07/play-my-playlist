@@ -1,6 +1,6 @@
 import React, { forwardRef } from "react";
 import logo from "../../../images/PMPL-LOGO.png";
-import { Link, useHistory } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import "./main-header.styles.css";
 import { Dropdown } from "react-bootstrap";
@@ -13,7 +13,7 @@ const MainHeaderDiv = (
   { title, routeName, userProfilePic, redirectPromt, promptMessage, userInfo },
   ref
 ) => {
-  const history = useHistory();
+  const history = useNavigate();
   const [removeCookie] = useCookies(["playlist_token"]);
   // const [cookie, removeCookie] = useCookies(["playlist_token"]);
   const promptCall = (path) => {
@@ -24,8 +24,8 @@ const MainHeaderDiv = (
       denyButtonText: `No`,
     }).then((result) => {
       if (result.isConfirmed) {
-        history.push(path);
-        // history.push("/");
+        history(path,{ replace: true });
+        // history("/");
       } else if (result.isDenied) {
         return;
       }
@@ -36,7 +36,7 @@ const MainHeaderDiv = (
     if (redirectPromt) {
       promptCall("/");
     } else {
-      history.push("/");
+      history("/");
     }
   };
 
@@ -44,7 +44,7 @@ const MainHeaderDiv = (
     if (redirectPromt) {
       promptCall(routeName);
     } else {
-      history.push(routeName);
+      history(routeName,{ replace: true });
     }
   };
 
@@ -58,7 +58,7 @@ const MainHeaderDiv = (
       if (response.status === 200) {
         console.log("logout");
         removeCookie("playlist_token");
-        history.push({
+        history({
           pathname: "/",
           search: "?logout=success",
           state: {
@@ -125,7 +125,7 @@ const MainHeaderDiv = (
               </Dropdown.Toggle>
 
               <Dropdown.Menu>
-                <Dropdown.Item as={Link} to='/userSettings'>
+                <Dropdown.Item as={Link} to='userSettings'>
                   User Settings
                 </Dropdown.Item>
                 <Dropdown.Item href='#'>User Rooms</Dropdown.Item>

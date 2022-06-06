@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useCookies } from "react-cookie";
+import jwt_decode from "jwt-decode"
 import { DATA_URL } from "../../index";
 import Swal from "sweetalert2";
 import "./join-room.styles.css";
@@ -8,12 +10,50 @@ import MainHeaderDiv from "../../components/layouts/MainHeaderDiv/MainHeaderDiv"
 import { Container, Row, Col, Form, Button } from "react-bootstrap";
 import { IoMdEye, IoIosEyeOff } from "react-icons/io";
 
-const JoinRoom = (props) => {
-  let history = useHistory();
+const JoinRoom = () => {
+  let history = useNavigate();
+
+  const [cookies] = useCookies(["playlist_token"]);
+
+  const [userInfo, setUserInfo] = useState(null);
 
   const [roomID, setRoomID] = useState("");
   const [password, setPassword] = useState("");
   const [viewPassword, setViewPassword] = useState(false);
+
+  useEffect(() => {
+    checkValidToken();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
+  function checkValidToken() {
+    var decoded = jwt_decode(cookies.playlist_token);
+    if (decoded) {            
+      fetchUserData(decoded.id);
+    }
+  }
+  const fetchUserData = async (user_id) => {
+    try {
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/user/get-user-details`,
+        {
+          user_id,
+        }
+      );
+
+      if (response.status === 200) {
+        console.log(response.data.userInfo);
+        setUserInfo(response.data.userInfo);
+      }
+
+    } catch(error) {
+      if (error.response) {
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
+    }
+  }
 
   // Function to check if server exists
   const handleCheckServer = async (e) => {
@@ -88,7 +128,7 @@ const JoinRoom = (props) => {
       let joinData = {
         room_id: roomID,
         password: password,
-        player_id: props.userInfo._id,
+        player_id: userInfo && userInfo._id,
       };
       // console.log(joinData);
       const response = await axios.post(
@@ -103,11 +143,11 @@ const JoinRoom = (props) => {
           title: "Success",
           text: response.data.message,
         });
-        history.push({
+        history({
           pathname: `/dashboard/${response.data.roomInfo._id}/${roomID}`,
           state: { room_id: response.data.roomInfo._id },
         });
-        // history.push({ pathname: "/dashboard", search: `/${response.data.roomInfo._id}/${roomID}`, state: { room_id: response.data.roomInfo._id } });
+        // history({ pathname: "/dashboard", search: `/${response.data.roomInfo._id}/${roomID}`, state: { room_id: response.data.roomInfo._id } });
       } else {
         Swal.fire({
           icon: "error",
@@ -144,8 +184,8 @@ const JoinRoom = (props) => {
     <div className='main-container'>
       <MainHeaderDiv
         title='Create Room'
-        routeName='CreateRoom'
-        userInfo={props.userInfo}
+        routeName='../CreateRoom'
+        userInfo={userInfo}
       />
       <div className='join-room-div'>
         <Container className='pb-1' fluid>

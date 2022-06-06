@@ -82,7 +82,7 @@ io.on("connection", (socket) => {
   // Join room Event
   socket.on(
     "join_room",
-    ({ user_id, room_id, name, songs_list, song_count }) => {
+    ({ user_id, room_id, name, songs_list, song_count, video_stream }) => {
       const userExists = getUser(socket.id);
       if (!userExists) {
         const user = addUser({
@@ -92,6 +92,7 @@ io.on("connection", (socket) => {
           name,
           songs_list,
           song_count,
+          video_stream,
         });
         // console.log('join room');
         // console.log(user);
@@ -115,6 +116,7 @@ io.on("connection", (socket) => {
               formatMessages(
                 botName,
                 null,
+                // `${user.name} joined the PlayMyPlayList room.`
                 `${user.name.split(" ")[0]} joined the PlayMyPlayList room.`
               )
             );
