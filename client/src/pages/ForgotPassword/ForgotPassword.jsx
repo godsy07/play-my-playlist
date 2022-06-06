@@ -1,5 +1,5 @@
 import React ,{ useState } from "react";
-import { Link ,useHistory} from "react-router-dom";
+import { Link ,useNavigate} from "react-router-dom";
 import { Container, Button, Form } from "react-bootstrap";
 import "./ForgotPassword-Style.css";
 import axios from "axios";
@@ -8,7 +8,7 @@ import Swal from "sweetalert2";
 import { useCookies } from "react-cookie";
 
 const ForgotPassword = (props) => {
-  const history = useHistory();
+  const history = useNavigate();
   const [setCookie] = useCookies();
   const [forgotEmail, setForgotEmail] = useState("");
   const [newForgotPassword, setnewForgotPassword] = useState("");
@@ -58,8 +58,8 @@ const ForgotPassword = (props) => {
           text: "You have successfully reset your password.",
         });
         setCookie("playlist_token", response.data.token);
-        history.push("/");
-        // history.push("/");
+        history("/");
+        // history("/");
         return;
       } else {
         Swal.fire({

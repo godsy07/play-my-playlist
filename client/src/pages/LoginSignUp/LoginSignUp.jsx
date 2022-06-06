@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useHistory } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import jwt_decode from "jwt-decode";
 import { DATA_URL } from "../../index";
 import Swal from "sweetalert2";
 import { Row, Col, Button, Form } from "react-bootstrap";
@@ -9,8 +10,8 @@ import { useCookies } from "react-cookie";
 import "./login-signup.styles.css";
 
 const LoginSignUp = (props) => {
-  const history = useHistory();
-  const [cookie, setCookie] = useCookies();
+  const history = useNavigate();
+  const [cookies, setCookie] = useCookies();
   // State to show signup form if true
   // console.log(props.location.state.signUp);
   const [signUpShow, setSignUpShow] = useState(true);
@@ -32,44 +33,6 @@ const LoginSignUp = (props) => {
   const [height, setHeight] = useState(0);
   const activateRef = useRef(null);
   const testRef = useRef(null);
-  // Load SignUp or Login page on mounting
-  useEffect(() => {
-    checkValidToken();
-    if (props.location.state === undefined || props.location.state.signUp === true) {
-      setSignUpShow(true);
-    } else {
-      setSignUpShow(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Check if the token is valid, redirect to HomePage
-  const checkValidToken = async () => {
-    try {
-      const response = await axios.get(
-        `${DATA_URL}/playlist/api/user/get-data`,
-        {
-          withCredentials: true,
-        }
-      );
-      // console.log(response);
-      if (response.status === 200) {
-        if (response.data.auth === true) {
-          // Redirect to Homepage
-          history.push({
-            pathname: "/",
-            search: "?user=authorized",
-          });
-        }
-      }
-    } catch (err) {
-      if (err.response) {
-        console.log(err.response);
-      } else {
-        console.log(err);
-      }
-    }
-  };
 
   // Function for Validation for create user data
   const validateCreateUser = () => {
@@ -128,7 +91,7 @@ const LoginSignUp = (props) => {
         setActivateEmail(userEmail);
         setActivateAccount(true);
         setsentPassCode(true);
-        // history.push("/");
+        // history("/");
         return;
       }
     } catch (error) {
@@ -149,9 +112,6 @@ const LoginSignUp = (props) => {
     }
   };
 
-  // const handleVerifyPassCode = (e) => {
-  //   e.preventDefault();
-  // }
   // handleCreateUser to submit room data when create Room button is clicked
   const handleCreateUser = (e) => {
     e.preventDefault();
@@ -200,14 +160,14 @@ const LoginSignUp = (props) => {
           text: "You have successfully logged in to your account.",
         });
         setCookie("playlist_token", response.data.token);
-        history.push({
+        history({
           pathname: "/",
           search: "?login=success",
           state: {
             message: "You have successfully logged in to your account.",
           },
         });
-        history.push("/");
+        history("/");
         return;
       } else {
         Swal.fire({

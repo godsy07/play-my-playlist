@@ -55,14 +55,6 @@ function ProtectedRoute({ component: Component, ...restOfProps }) {
       state: { signup: false }
     }}
   />;
-  }
-
-  if (!isLoaded) {
-    return (
-      <div className='main-container mt-5 d-flex justify-content-center'>
-        <LoadingSpinner className="mt-5" />
-      </div>
-    );
   } else {
     return (
       <Route
@@ -71,6 +63,21 @@ function ProtectedRoute({ component: Component, ...restOfProps }) {
       />
     );
   }
+
+  // if (!isLoaded) {
+  //   return (
+  //     <div className='main-container mt-5 d-flex justify-content-center'>
+  //       <LoadingSpinner className="mt-5" />
+  //     </div>
+  //   );
+  // } else {
+  //   return (
+  //     <Route
+  //       {...restOfProps}
+  //       render={(props) => <Component {...props} userInfo={userInfo} />}
+  //     />
+  //   );
+  // }
 }
 
 export default ProtectedRoute;

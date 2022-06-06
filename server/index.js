@@ -82,7 +82,7 @@ io.on("connection", (socket) => {
   // Join room Event
   socket.on(
     "join_room",
-    ({ user_id, room_id, name, songs_list, song_count }) => {
+    ({ user_id, room_id, name, songs_list, song_count, video_stream }) => {
       const userExists = getUser(socket.id);
       if (!userExists) {
         const user = addUser({
@@ -92,6 +92,7 @@ io.on("connection", (socket) => {
           name,
           songs_list,
           song_count,
+          video_stream,
         });
         // console.log('join room');
         // console.log(user);
@@ -115,6 +116,7 @@ io.on("connection", (socket) => {
               formatMessages(
                 botName,
                 null,
+                // `${user.name} joined the PlayMyPlayList room.`
                 `${user.name.split(" ")[0]} joined the PlayMyPlayList room.`
               )
             );
@@ -210,11 +212,11 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("player-vote", ({ song_id }) => {
+  socket.on("player-vote", ({ song_id, room_players }) => {
     const user = getUser(socket.id);
     if (user) {      
       // Send the updated data after adding the voted details of the player
-      io.to(user.room_id).emit("fetchVoters", { song_id });
+      io.to(user.room_id).emit("fetchVoters", { song_id, room_players });
 
       io.to(user.room_id).emit("notification", {
         success: true,

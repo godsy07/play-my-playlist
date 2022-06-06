@@ -257,16 +257,6 @@ const votePlayer = async (req, res) => {
         song_id,
         current_points: points,
       });
-
-      // if (voted_player_id != songData[0].player_id && scoreDetails.length !== 0) {
-      //   // if voted is not right, remain same
-      //   points = scoreDetails[0].points;
-      //   console.log("voted wrong player, no change");
-      // } else if (voted_player_id == songData[0].player_id && scoreDetails.length !== 0) {
-      //   // if voted is right, add 10 points
-      //   points = scoreDetails[0].points + 10;
-      //   console.log("voted right player, add 10 points");
-      // }
     } else {
       earlier_voted_player = voteData[0].voted_player_id;
       await voteModel.update(
@@ -274,45 +264,19 @@ const votePlayer = async (req, res) => {
         { voted_player_id, current_points: points }
       );
 
-      // console.log("scoreDetails");
-      // console.log(scoreDetails);
-      // console.log("points before");
-      // console.log(points);
-
-      // if (earlier_voted_player == voted_player_id && scoreDetails.length !== 0) {
-      //   // (earlier_voted_player != songData[0].player_id || earlier_voted_player == songData[0].player_id)
-      //   // if earlier voted is same as now and was right or wrong, the points remain same
-      //   points = scoreDetails[0].points;
-      //   console.log("voted same player, no change");
-      // } else if (earlier_voted_player != songData[0].player_id && voted_player_id != songData[0].player_id && scoreDetails.length !== 0) {
-      //   // if earlier voted is not same as now and is not right, remain same
-      //   points = scoreDetails[0].points;
-      //   console.log("voted wrong player, no change");
-      // } else if (earlier_voted_player != songData[0].player_id && voted_player_id == songData[0].player_id && scoreDetails.length !== 0) {
-      //   // if earlier voted is not same as now and is right, add 10 points
-      //   points = scoreDetails[0].points + 10;
-      //   console.log("voted right player, add 10 points");
-      // }
-      // console.log("points after");
-      // console.log(points);
       voteData = await voteModel.find({ room_id, player_id, song_id });
     }
 
     if (scoreDetails.length === 0) {
       scoreData = await scorePointModel.create({ room_id, player_id, points });
     } else {
-      console.log("original points");
-      console.log(points);
-
       if (earlier_voted_player.length == 0) {
         if (voted_player_id != songData[0].player_id) {
           // if voted is not right, remain same
           points = scoreDetails[0].points;
-          console.log("voted wrong player, no change");
         } else if (voted_player_id == songData[0].player_id) {
           // if voted is right, add 10 points
           points = scoreDetails[0].points + 10;
-          console.log("voted right player, add 10 points");
         }
       } else {
         if (
@@ -322,26 +286,21 @@ const votePlayer = async (req, res) => {
           // (earlier_voted_player != songData[0].player_id || earlier_voted_player == songData[0].player_id)
           // if earlier voted is same as now and was right or wrong, the points remain same
           points = scoreDetails[0].points;
-          console.log("voted same player or voted wrong player, no change");
-        // } else if (
-        //   earlier_voted_player == songData[0].player_id &&
-        //   voted_player_id != songData[0].player_id
-        // ) {
-        //   // if earlier voted is not same as now and is right, add 10 points
-        //   points = scoreDetails[0].points - 10;
-        //   console.log("voted right player, remove 10 points");
+          // } else if (
+          //   earlier_voted_player == songData[0].player_id &&
+          //   voted_player_id != songData[0].player_id
+          // ) {
+          //   // if earlier voted is not same as now and is right, add 10 points
+          //   points = scoreDetails[0].points - 10;
+          //   console.log("voted right player, remove 10 points");
         } else if (
           earlier_voted_player != songData[0].player_id &&
           voted_player_id == songData[0].player_id
         ) {
           // if earlier voted is not same as now and is right, add 10 points
           points = scoreDetails[0].points + 10;
-          console.log("voted right player, add 10 points");
         }
       }
-
-      console.log("points increment");
-      console.log(points);
 
       scoreData = await scorePointModel.findOneAndUpdate(
         { room_id, player_id },
@@ -350,10 +309,78 @@ const votePlayer = async (req, res) => {
       );
     }
 
+    let roomUsers = await userModel.aggregate([
+      {
+        $match: { active_room: ObjectId(room_id) },
+      },
+      {
+        $lookup: {
+          from: "songs",
+          localField: "_id",
+          foreignField: "player_id",
+          as: "songs",
+        },
+      },
+      {
+        $lookup: {
+          from: "votes",
+          as: "vote",
+          let: { room_id: "$active_room", player_id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$room_id", "$$room_id"] },
+                    { $eq: ["$player_id", "$$player_id"] },
+                    { $eq: ["$song_id", ObjectId(song_id)] },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      },{
+        $lookup: {
+          from: "users",
+          localField: "vote.voted_player_id",
+          foreignField: "_id",
+          as: "voted_player",
+        },
+      },
+      // { $unwind: "$vote" },
+      // { $unwind: "$voted_player" },
+      { $addFields: { songsCount: { $size: "$songs" } } },
+      {
+        $project: {
+          activation: 0,
+          password: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          game_status: 0,
+          "__v": 0,
+          "songs.song": 0,
+          "songs.player_id": 0,
+          "songs.room_id": 0,
+          "songs.song_status": 0,
+          "songs.__v": 0,
+          "voted_player.email": 0,
+          "voted_player.active_room": 0,
+          "voted_player.activation": 0,
+          "voted_player.password": 0,
+          "voted_player.createdAt": 0,
+          "voted_player.updatedAt": 0,
+          "voted_player.game_status": 0,
+          "voted_player.__v": 0,
+        },
+      },
+    ]);
+
     return res.status(200).json({
       success: true,
       message: "Vote Player success.",
       voteData: voteData[0],
+      roomUsers,
       voted_player: votedUserData[0].name.split(" ")[0],
     });
   } catch (error) {
@@ -648,12 +675,22 @@ const fetchRoomScores = async (req, res) => {
           as: "score_points",
         },
       },
-      { $unwind: "$score_points" },
-      { $sort: { "name": 1 } },
+      // { $unwind: "$score_points" },
+      { $sort: { "score_points.points": -1 } },
       {
         $project: {
-          "name": 1,
-          "score_points.points": 1,
+          activation: 0,
+          password: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          game_status: 0,
+          __v: 0,
+          "score_points._id": 0,
+          "score_points.room_id": 0,
+          "score_points.player_id": 0,
+          "score_points.createdAt": 0,
+          "score_points.updatedAt": 0,
+          "score_points.__v": 0,
         },
       },
     ]);
@@ -661,6 +698,7 @@ const fetchRoomScores = async (req, res) => {
     return res.status(200).json({
       success: true,
       scoreData,
+      topPlayer: scoreData[0],
       message: "Player scores successfully fetched.",
     });
   } catch (error) {
@@ -668,7 +706,7 @@ const fetchRoomScores = async (req, res) => {
       .status(500)
       .json({ success: false, message: "Some error occured in the server." });
   }
-}
+};
 
 const fetchPlayersScores = async (req, res) => {
   try {
@@ -699,24 +737,24 @@ const fetchPlayersScores = async (req, res) => {
     }
 
     const songData = await songModel.aggregate([
-      {$match: { room_id: ObjectId(room_id), _id: ObjectId(song_id) } },
+      { $match: { room_id: ObjectId(room_id), _id: ObjectId(song_id) } },
       {
         $lookup: {
           from: "users",
           localField: "player_id",
           foreignField: "_id",
-          as: "player"
-        }
+          as: "player",
+        },
       },
       { $unwind: "$player" },
       {
         $project: {
-          "_id": 1,
-          "song": 1,
+          _id: 1,
+          song: 1,
           "player._id": 1,
           "player.name": 1,
-        }
-      }
+        },
+      },
     ]);
 
     let scoreData = await voteModel.aggregate([
@@ -749,7 +787,7 @@ const fetchPlayersScores = async (req, res) => {
       },
       { $unwind: "$player" },
       { $unwind: "$voted_player" },
-      { $unwind: "$score_points" },
+      // { $unwind: "$score_points" },
       { $sort: { "player.name": 1 } },
       {
         $project: {
@@ -762,7 +800,6 @@ const fetchPlayersScores = async (req, res) => {
           "player.createdAt": 0,
           "player.updatedAt": 0,
           "player.game_status": 0,
-          "voted_player._id": 0,
           "voted_player.email": 0,
           "voted_player.active_room": 0,
           "voted_player.profile_pic_url": 0,

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useHistory } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Container,
   Button,
@@ -20,7 +20,7 @@ import MainHeaderDiv from "../../components/layouts/MainHeaderDiv/MainHeaderDiv"
 import { IoAccessibilitySharp } from "react-icons/io5";
 
 const UserSettings = ({ userInfo }) => {
-  const history = useHistory();
+  const history = useNavigate();
   const [cookie, setCookie] = useCookies();
   const [userID, setUserID] = useState("");
   const [userProfilePic, setUserProfilePic] = useState(null);

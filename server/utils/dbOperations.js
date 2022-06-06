@@ -15,6 +15,7 @@ const deletePlayer = async (user_id, room_id) => {
     const roomInfo = await RoomModel.findOne({ room_id });
     
     let deletedData;
+    // deletedData = await UserModel.update({ _id: user_id, active_room: null });
     // deletedData = await ScorePointModel.deleteMany({ room_id, player_id: user_id });
     // console.log('deleted score points');
     // console.log(deletedData);

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useHistory, useParams } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Container,
   Row,
@@ -12,10 +12,11 @@ import {
   Toast,
   Modal,
 } from "react-bootstrap";
-import ReactPlayer from 'react-player';
+import ReactPlayer from "react-player";
 import axios from "axios";
-import Peer from "peerjs";
 import io from "socket.io-client";
+import { useCookies } from "react-cookie";
+import jwt_decode from "jwt-decode";
 
 import { DATA_URL } from "../../index";
 import Swal from "sweetalert2";
@@ -39,18 +40,23 @@ import GameRoom from "../GameRoom/GameRoom";
 // import { NotificationToast } from "../../functionalities/pageFunctions";
 
 let socket;
-let myPeer = new Peer();
 
 const Dashboard = (props) => {
-  let history = useHistory();
+  let history = useNavigate();
 
-  const {id, room_id} = useParams()
-  
+  const { id, room_id } = useParams();
+
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+
+  const [cookies] = useCookies(["playlist_token"]);
+
   const ENDPOINT = DATA_URL;
   const [GameStatus, setGameStatus] = useState("not_started");
   const [GameEvent, setGameEvent] = useState("start");
   const [joinRoomStatus, setJoinRoomStatus] = useState(false);
   const [userID, setUserID] = useState("");
+  const [userData, setUserData] = useState(null); // Only for voting purposes
   const [roomID, setRoomID] = useState(room_id);
   const [roomObjID, setObjRoomID] = useState(id);
   const [roomPlayers, setRoomPlayers] = useState([]);
@@ -74,11 +80,13 @@ const Dashboard = (props) => {
   const [RoomSongs, setRoomSongs] = useState([]);
   const [RoomSongsCount, setRoomSongsCount] = useState("");
 
+  const [streamVideoData, setStreamVideoData] = useState([]);
   const [streamVideo, setStreamVideo] = useState(null);
   const [passAudio, setPassAudio] = useState(false);
   const [passVideo, setPassVideo] = useState(false);
 
   const [showScoreboard, setShowScoreboard] = useState("hide");
+  const [topPlayer, setTopPlayer] = useState(null);
   const [scoresData, setScoresData] = useState([]);
   const [answerData, setAnswerData] = useState([]);
   const [roomScores, setRoomScores] = useState(false);
@@ -86,22 +94,70 @@ const Dashboard = (props) => {
   const [toastData, setToastData] = useState(null);
   // const [notifyData, setNotifyData] = useState(null);
   const [showToast, setShowToast] = useState(false);
-  
+
+  const [userInfo, setUserInfo] = useState(null);
+
   const [showPlaySong, setShowPlaySong] = useState(false);
   const [songURL, setSongURL] = useState("");
-  
-  const [showVoteCollectModal,setShowVoteCollectModal] = useState(false);
+
+  const [showVoteCollectModal, setShowVoteCollectModal] = useState(false);
+
+  const setUserDetails = async () => {
+    fetchDetails();
+    // Set userID, UserName/GuestName, RoomID
+    // setUserID(props.userInfo._id);
+    // setGuestName(props.userInfo.name);
+    // // setRoomID(room_id);
+    // fetchRoomDetails(room_id);
+    // fetchRoomPlayers(id);
+    // fetchSongs(id, props.userInfo._id);
+  };
+
+  const fetchDetails = () => {
+    try {
+      if (cookies.playlist_token) {
+        var decoded = jwt_decode(cookies.playlist_token);
+        
+        if (decoded) {
+          // console.log(decoded)
+          fetchUserData(decoded.id)
+          setUserID(decoded.id);
+          setGuestName(decoded.user_name);
+          // setRoomID(room_id);
+          fetchRoomDetails(room_id);
+          fetchRoomPlayers(id);
+          fetchSongs(id, decoded.id);
+        }
+      }
+    } catch(error) {
+      console.log("error")
+      console.log(error)
+    }
+  }
 
   // Function to set user Details
-  const setUserDetails = () => {
-    // Set userID, UserName/GuestName, RoomID
-    setUserID(props.userInfo._id);
-    setGuestName(props.userInfo.name);
-    // setRoomID(room_id);
-    fetchRoomDetails(room_id);
-    fetchRoomPlayers(id);
-    fetchSongs(id, props.userInfo._id);
-  };
+  const fetchUserData = async (user_id) => {
+    try {
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/user/get-user-details`,
+        {
+          user_id,
+        }
+      );
+
+      if (response.status === 200) {
+        console.log(response.data.userInfo);
+        setUserInfo(response.data.userInfo);
+      }
+
+    } catch(error) {
+      if (error.response) {
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
+    }
+  }
 
   // Function to fetch room Details
   const fetchRoomDetails = async (room_id) => {
@@ -112,7 +168,7 @@ const Dashboard = (props) => {
       );
 
       if (response.status === 200) {
-        console.log("fetchRoomDetails function called");
+        // console.log("fetchRoomDetails function called");
         // console.log(response);
         setRoomDetails(response.data.roomDetails);
         setObjRoomID(response.data.roomDetails._id);
@@ -120,9 +176,8 @@ const Dashboard = (props) => {
         setHostID(response.data.hostDetails._id);
         // set host profile pic
         let profile_pic = response.data.hostDetails.profile_pic_url;
-        setHostProfilePic(profile_pic && DATA_URL +"/"+ profile_pic);
+        setHostProfilePic(profile_pic && DATA_URL + "/" + profile_pic);
       }
-
     } catch (error) {
       if (error.response) {
         console.log(error.response.data.message);
@@ -149,13 +204,12 @@ const Dashboard = (props) => {
         `${DATA_URL}/playlist/api/room/get-room-users`,
         { room_id }
       );
-      
+
       if (response.status === 200) {
-        console.log("fetchRoomPlayers function called");
-        console.log(response);
+        // console.log("fetchRoomPlayers function called");
+        // console.log(response);
         setRoomPlayers(response.data.roomUsers);
       }
-
     } catch (error) {
       if (error.response) {
         console.log(error.response.data.message);
@@ -187,14 +241,13 @@ const Dashboard = (props) => {
       );
 
       if (response.status === 200) {
-        console.log("fetchSongs called");
-        console.log(response.data);
+        // console.log("fetchSongs called");
+        // console.log(response.data);
         // Reset song input data to empty
         setPlayerSongsList(response.data.songsData);
         setPlayerSongCount(response.data.songsCount);
         return;
       }
-
     } catch (error) {
       if (error.response) {
         console.log(error.response.data.message);
@@ -213,69 +266,29 @@ const Dashboard = (props) => {
       }
     }
   };
-  
-  const fetchVotedPlayers = async (room_id, song_id) => {
-    try {
-      const response = await axios.post(
-        `${DATA_URL}/playlist/api/song/fetch-voted-players`,
-        {
-          room_id,
-          song_id,
-        }
-      );
-
-      if (response.status === 200) {
-        console.log("fetchVotedPlayers");
-        console.log(response);
-        // Fetch voted players data with roomUsers data to mark who voted whom
-        
-        // let allVoted = true;
-        // room_users.forEach((user) => {
-        //   // turn userLeft to true, if someone has not voted (i.e. their vote data does not exist in response)
-        //   if (
-        //     !response.data.votedData.find(
-        //       (data) => data.player_id === user.user_id
-        //     )
-        //   ) {
-        //     allVoted = false;
-        //   }
-        // });
-        // setAllPlayersVoted(allVoted);
-        // fetchScores(allVoted);
-        // Loop through voted players and roomplayers to find player names to display
-      }
-    } catch (error) {
-      if (error.response) {
-        console.log(error.response);
-      } else {
-        console.log(error);
-      }
-    }
-  };
 
   useEffect(() => {
     // Run only on mounting of all components
-    if (!props.location.state) {
-      console.log("room_id does not exist");
-      history.push("/joinRoom");
-    }
+    // if (!props.location.state) {
+    //   console.log("room_id does not exist");
+    //   history("/joinRoom");
+    // }
     setUserDetails();
-  },[]);
+  }, []);
 
   useEffect(() => {
     socket = io(ENDPOINT);
-    
-    // let conn = myPeer.connect(props.userInfo._id);
-    
-    // myPeer.on("connection", function (conn) {
-    //   conn.on("data", function (data) {
-    //     // Will print 'hi!'
-    //     console.log("peer js connection done");
-    //     console.log(data);
-    //   });
-    // });
 
-      if (userID.length !== 0) {
+    // let stream;
+    // try {
+    //   stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    //   setStreamVideo(stream);
+    // } catch(error) {
+    //   console.log("Media devices error");
+    //   console.log(error);
+    // }
+
+    if (userID.length !== 0) {
       if (!joinRoomStatus) {
         socket.emit("join_room", {
           user_id: userID,
@@ -283,12 +296,13 @@ const Dashboard = (props) => {
           name: guestName,
           songs_list: PlayerSongsList,
           song_count: PlayerSongCount,
+          video_stream: streamVideo,
         });
         setJoinRoomStatus(true);
       }
 
       socket.on("message", (message) => {
-        console.log(message);
+        // console.log(message);
         setChatBoxData((chatBoxData) => [...chatBoxData, message]);
       });
 
@@ -311,7 +325,7 @@ const Dashboard = (props) => {
 
       socket.on("recieve-song", ({ song_details, room_id }) => {
         console.log("recieve-song");
-        console.log(song_details)
+        console.log(song_details);
         if (song_details) {
           checkPlayerVotedStatus(song_details.room_id, song_details._id);
           setCurrentSongID(song_details._id);
@@ -325,8 +339,10 @@ const Dashboard = (props) => {
       });
 
       socket.on("change_game_event", ({ game_event, song_id, room_obj_id }) => {
-        console.log("next game event")
-        if (game_event === "results") {
+        console.log("next game event");
+        if (game_event === "collect") {
+          setGameEvent("collect");
+        } else if (game_event === "results") {
           setGameEvent("results");
         } else if (game_event === "next") {
           setGameEvent("next");
@@ -344,39 +360,26 @@ const Dashboard = (props) => {
         } else if (game_event === "exit") {
           // console.log("Game ends here");
           console.log("Time to exit");
-          Swal.fire({
-            title: "Do you really want to exit?",
-            showDenyButton: true,
-            confirmButtonText: "Yes",
-            denyButtonText: `No`,
-          }).then((result) => {
-            if (result.isConfirmed) {
-              history.push("/joinRoom");
-              return;
-            } else if (result.isDenied) {
-              return;
-            }
-          });
-          // history.push("/joinRoom");
+          history("/joinRoom");
         }
-      })
-
+      });
 
       socket.on("roomUsers", ({ users }) => {
         console.log("roomUsers");
+        console.log(users);
         if (users) {
           // setRoomPlayers(users);
           fetchRoomPlayers(roomObjID);
         }
       });
 
-      socket.on(
-        "fetchVoters",
-        async ({ song_id }) => {
-          console.log("fetchVoters");
-          await fetchVotedPlayers(roomObjID, song_id);
-        }
-      );
+      socket.on("fetchVoters", async ({ player_id, room_players }) => {
+        console.log("fetchVoters");
+        console.log(room_players);
+        // Need to uncomment below line after fixing the query
+        setRoomPlayers(room_players);
+        // await fetchVotedPlayers(roomObjID, song_id);
+      });
 
       socket.on("notification", ({ success, message }) => {
         console.log({ success, message });
@@ -400,41 +403,12 @@ const Dashboard = (props) => {
   }, []);
 
   useEffect(() => {
-    // Access the user's video and audio
-    navigator.mediaDevices
-      .getUserMedia({
-        video: passVideo,
-        audio: passAudio,
-      })
-      .then((stream) => {
-        setStreamVideo(stream);
-        // roomPlayers
-      }).catch(err => {
-        console.log(err)
-        console.log(err.name)
-        if (err.name == "NotFoundError" || err.name == "DevicesNotFoundError") {
-            //required track is missing 
-        } else if (err.name == "NotReadableError" || err.name == "TrackStartError") {
-            //webcam or mic are already in use 
-        } else if (err.name == "OverconstrainedError" || err.name == "ConstraintNotSatisfiedError") {
-            //constraints can not be satisfied by avb. devices 
-        } else if (err.name == "NotAllowedError" || err.name == "PermissionDeniedError") {
-            //permission denied in browser 
-        } else if (err.name == "TypeError" || err.name == "TypeError") {
-            //empty constraints object 
-        } else {
-            //other errors 
-        }
-      });
-  }, [passAudio, passVideo])
-
-  useEffect(() => {
     setTimeout(() => {
       if (showToast) {
         setShowToast(false);
         setToastData(null);
       }
-    }, 3000)
+    }, 3000);
   }, [showToast]);
 
   // Function to emit Chat messages to Socket IO
@@ -460,6 +434,7 @@ const Dashboard = (props) => {
         console.log(response.data);
         setRoomScores(true);
         setScoresData(response.data.scoreData);
+        setTopPlayer(response.data.topPlayer);
         setShowScoreboard("show_scores"); // Show scoreboard
       } else {
         setToastData({
@@ -479,27 +454,52 @@ const Dashboard = (props) => {
         console.log(error);
       }
     }
-  }
+  };
 
-  const resetRoomSongs = async (room_id) => {
+  // Delete room votes, scores and save highscores, change song status to "not_played" before exiting the room
+  const deleteRoomVotes = async (room_id) => {
     try {
-      const response = await axios.post(`${DATA_URL}/playlist/api/room/reset-room-songs-status`, {
-        room_id
-      });
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/room//delete-room-current-data`,
+        {
+          room_id,
+        }
+      );
 
       if (response.status === 200) {
-        console.log("Reset Songs status");
+        console.log("Delete room details before exiting/starting");
         console.log(response);
       }
-
-    } catch(error) {
+    } catch (error) {
       if (error.response) {
         console.log(error.response);
       } else {
         console.log(error);
       }
     }
-  }
+  };
+
+  const resetRoomSongs = async (room_id) => {
+    try {
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/room/reset-room-songs-status`,
+        {
+          room_id,
+        }
+      );
+
+      if (response.status === 200) {
+        console.log("Reset Songs status");
+        console.log(response);
+      }
+    } catch (error) {
+      if (error.response) {
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
+    }
+  };
   // Check player vote status
   const checkPlayerVotedStatus = async (room_id, song_id) => {
     try {
@@ -508,35 +508,21 @@ const Dashboard = (props) => {
         {
           room_id,
           song_id,
-          // room_id: roomObjID,
-          // song_id: currentSongID,
         }
       );
 
       if (response.status === 200) {
         console.log("checking player voted status");
-        // console.log(response);
-        // console.log("players");
-        // console.log(roomPlayers);
         setVotedData(response.data.votedPlayers);
-        // let tempArr;
-        // roomPlayers.forEach((data) => {
-        //   let tempObj = {};
-        //   // if this player exists in voted list, then add their details
-        //   response.data.votedPlayers.find(item => {
-        //     if (data._id === item.) {}
-        //   }) 
-        // })
       }
-
-    } catch(error) {
+    } catch (error) {
       if (error.response) {
         console.log(error.response);
       } else {
         console.log(error);
       }
     }
-  }
+  };
 
   // Fetch Scores
   const fetchScores = async (song_id, room_id) => {
@@ -585,7 +571,6 @@ const Dashboard = (props) => {
         }
       );
       if (response.status === 200) {
-        
         // setToastData({
         //   title: "Success",
         //   message: response.data.message,
@@ -594,12 +579,18 @@ const Dashboard = (props) => {
         // });
         // setShowToast(true);
         return true;
-        
       }
       return false;
     } catch (error) {
       if (error.response) {
-        console.log(error.response);
+        // console.log(error.response);
+        setToastData({
+          title: "Error",
+          message: error.response.data.message,
+          type: "error",
+          time: new Date(),
+        });
+        setShowToast(true);
       } else {
         console.log(error);
       }
@@ -607,12 +598,15 @@ const Dashboard = (props) => {
     }
   };
 
-  const handleCollectVotes = async () => {
+  const handleVotes = async () => {
     if (hostID === userID) {
+      changeSongStatus("played");
+      setShowVoteCollectModal(false);
+
       let all_voted = await checkAllVotes();
       if (all_voted) {
-        socket.emit("game_event",{
-          game_event: "results",
+        socket.emit("game_event", {
+          game_event: "collect",
         });
       } else {
         setToastData({
@@ -622,7 +616,6 @@ const Dashboard = (props) => {
           time: new Date(),
         });
         setShowToast(true);
-
       }
     } else {
       setToastData({
@@ -633,15 +626,43 @@ const Dashboard = (props) => {
       });
       setShowToast(true);
     }
-  }
+  };
+
+  const handleCollectVotes = async () => {
+    if (hostID === userID) {
+      // let all_voted = await checkAllVotes();
+      // if (all_voted) {
+      socket.emit("game_event", {
+        game_event: "results",
+      });
+      // } else {
+      //   setToastData({
+      //     title: "Wait...",
+      //     message: "All players have not voted.",
+      //     type: "warning",
+      //     time: new Date(),
+      //   });
+      //   setShowToast(true);
+      // }
+    } else {
+      setToastData({
+        title: "Oops...",
+        message: "Action allowed only to room host",
+        type: "warning",
+        time: new Date(),
+      });
+      setShowToast(true);
+    }
+  };
 
   const handleCheckResults = async () => {
     if (hostID === userID) {
       changeSongStatus("played");
-      socket.emit("game_event",{
+      setUserData(null);
+      socket.emit("game_event", {
         game_event: "next",
         song_id: currentSongID,
-        room_obj_id: roomObjID
+        room_obj_id: roomObjID,
       });
     } else {
       setToastData({
@@ -652,12 +673,12 @@ const Dashboard = (props) => {
       });
       setShowToast(true);
     }
-  }
+  };
   const handleNextSong = () => {
     if (hostID === userID) {
-      socket.emit("game_event",{
+      socket.emit("game_event", {
         game_event: "start",
-        room_obj_id: roomObjID
+        room_obj_id: roomObjID,
       });
     } else {
       setToastData({
@@ -668,12 +689,12 @@ const Dashboard = (props) => {
       });
       setShowToast(true);
     }
-  }
+  };
   const handleFinishGame = () => {
     if (hostID === userID) {
-      socket.emit("game_event",{
+      socket.emit("game_event", {
         game_event: "end",
-        room_obj_id: roomObjID
+        room_obj_id: roomObjID,
       });
     } else {
       setToastData({
@@ -684,12 +705,27 @@ const Dashboard = (props) => {
       });
       setShowToast(true);
     }
-  }
+  };
   const handleExitRoom = () => {
     if (hostID === userID) {
-      socket.emit("game_event",{
-        game_event: "exit",
-        room_obj_id: roomObjID
+      Swal.fire({
+        title: "Do you really want to exit?",
+        showDenyButton: true,
+        confirmButtonText: "Yes",
+        denyButtonText: `No`,
+      }).then((result) => {
+        if (result.isConfirmed) {
+          deleteRoomVotes(roomObjID);
+
+          socket.emit("game_event", {
+            game_event: "exit",
+            room_obj_id: roomObjID,
+          });
+
+          return;
+        } else if (result.isDenied) {
+          return;
+        }
       });
       // delete votes and store scores in some other collection (i.e. high_scores) then delete scores for the room in score_points
     } else {
@@ -701,7 +737,7 @@ const Dashboard = (props) => {
       });
       setShowToast(true);
     }
-  }
+  };
 
   // Function to add songs to the list
   const addSongs = async (e) => {
@@ -827,7 +863,7 @@ const Dashboard = (props) => {
         // Fetch all users data and check if they have added atleast 3 songs for now
         // emit roomID to fetch users songCount Details
         // socket.emit("request_song_details", { room_id: roomID });
-        
+
         let countStatus = true;
         roomPlayers.forEach((user) => {
           // minimum of 2 songs for now
@@ -844,7 +880,8 @@ const Dashboard = (props) => {
           return;
         }
         // Change the song to 'not_played' status
-        await changeRoomSongsStatus(room_id);
+        await deleteRoomVotes(roomObjID);
+        // await changeRoomSongsStatus(room_id);
         // Redirect to GameRoom emitting an event so others might also join
         socket.emit("start_game");
         return;
@@ -943,7 +980,7 @@ const Dashboard = (props) => {
         `${DATA_URL}/playlist/api/song/delete-song`,
         { song_id }
       );
-      
+
       if (response.status === 200) {
         console.log(response);
       }
@@ -955,7 +992,7 @@ const Dashboard = (props) => {
       }
     }
   };
-  
+
   const changeSongStatus = async (status) => {
     try {
       console.log("changeSongStatus function");
@@ -967,23 +1004,22 @@ const Dashboard = (props) => {
       if (response.status === 200) {
         console.log(response);
       }
-
-    } catch(error) {
+    } catch (error) {
       if (error.response) {
         console.log(error.response);
       } else {
         console.log(error);
       }
     }
-  }
-  
+  };
+
   // pick using node js and socket io
   const handlePickRandomSong = async (room_id) => {
     try {
       const response = await axios.post(
         `${DATA_URL}/playlist/api/song/get-random-room-song`,
         { room_id }
-        );
+      );
 
       console.log("handlePickRandomSong function");
       if (response.status === 200) {
@@ -1034,7 +1070,6 @@ const Dashboard = (props) => {
         return;
       }
 
-      console.log("handleVotingPlayer function");
       const response = await axios.post(
         `${DATA_URL}/playlist/api/song/vote-player`,
         {
@@ -1044,18 +1079,30 @@ const Dashboard = (props) => {
           player_id: userID,
         }
       );
+
       if (response.status === 200) {
+        console.log("handleVotingPlayer function");
         console.log(response);
-        setGameEvent("collect");
-        setShowVoteCollectModal(false);
         // setVotedPlayer(votedPlayer.push(userID));
+        let userVoteData = response.data.roomUsers.find(
+          (user) => user._id === userID
+        );
+        setUserData(userVoteData);
+        // console.log(userVoteData);
+
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: response.data.message,
+        });
         // Fetch votes for current song from backend using socket io by everyone
         await socket.emit("player-vote", {
           song_id: song_id,
+          // player_id: player_id,
           voted_player_id: voted_player_id,
+          room_players: response.data.roomUsers,
         });
       }
-
     } catch (error) {
       if (error.response) {
         console.log(error.response);
@@ -1074,13 +1121,13 @@ const Dashboard = (props) => {
       }
     }
   };
-  
-  const handlePlaySong = async (e,song_link) => {
+
+  const handlePlaySong = async (e, song_link) => {
     e.preventDefault();
     console.log("Play song on player");
     setSongURL(song_link);
     setShowPlaySong(true);
-  }
+  };
 
   return (
     <div className='main-container'>
@@ -1098,19 +1145,30 @@ const Dashboard = (props) => {
       <>
         <Modal
           // size="lg"
+          backdrop='static'
           show={showPlaySong}
+          keyboard={false}
           onHide={() => setShowPlaySong(false)}
         >
           <Modal.Header closeButton>
-            <Modal.Title>
-              Play Song
-            </Modal.Title>
+            <Modal.Title>Play Song</Modal.Title>
           </Modal.Header>
-          <Modal.Body className="d-flex justify-content-center align-items-center">
-            <ReactPlayer url={songURL.length !== 0 ? songURL : 'https://www.youtube.com/watch?v=ysz5S6PUM-U'} controls={true} style={{ maxWidth: "400px" }} />
+          <Modal.Body className='d-flex justify-content-center align-items-center'>
+            <ReactPlayer
+              url={
+                songURL.length !== 0
+                  ? songURL
+                  : "https://www.youtube.com/watch?v=ysz5S6PUM-U"
+              }
+              controls={true}
+              style={{ maxWidth: "400px" }}
+            />
           </Modal.Body>
         </Modal>
       </>
+
+      {/* <video ref={localVideoRef} width={400} muted autoPlay />
+      <video ref={remoteVideoRef} muted autoPlay /> */}
 
       <PlayerDashboard
         GameStatus={GameStatus}
@@ -1126,7 +1184,7 @@ const Dashboard = (props) => {
         streamVideo={streamVideo}
         passAudio={passAudio}
         passVideo={passVideo}
-        // toggleAudio={() => setPassAudio(!passAudio)}
+        toggleAudio={() => setPassAudio(!passAudio)}
         toggleVideo={() => setPassVideo(!passVideo)}
         onChangeSongLink={(e) => setSongLink(e.target.value)}
         showRules={showRules}
@@ -1140,11 +1198,16 @@ const Dashboard = (props) => {
 
       <GameRoom
         userID={userID}
+        hostID={hostID}
         votedData={votedData}
+        userData={userData}
         votedPlayer={votedPlayer}
-        setVotedPlayer={(e) => setVotedPlayer(e.target.value)}
+        setVotedPlayer={(player_id) => setVotedPlayer(player_id)}
+        // setVotedPlayer={(e) => setVotedPlayer(e.target.value)}
         showVoteCollectModal={showVoteCollectModal}
-        toggleVoteCollectModal={() => setShowVoteCollectModal(!showVoteCollectModal)}
+        toggleVoteCollectModal={() =>
+          setShowVoteCollectModal(!showVoteCollectModal)
+        }
         GameStatus={GameStatus}
         GameEvent={GameEvent} // start_game, collect_votes, check_results, next_song, finish, exit_room
         roomDetails={roomDetails}
@@ -1154,9 +1217,11 @@ const Dashboard = (props) => {
         handlePlaySong={handlePlaySong}
         scoresData={scoresData}
         answerData={answerData}
+        topPlayer={topPlayer}
         roomScores={roomScores}
         showScoreboard={showScoreboard}
         fetchPlayerScores={fetchScores}
+        handleVotes={handleVotes}
         handleCollectVotes={handleCollectVotes}
         handleCheckResults={handleCheckResults}
         handleNextSong={handleNextSong}
@@ -1175,7 +1240,9 @@ const Dashboard = (props) => {
       />
 
       {/* <ToastContainer position="top-end" className="p-3 mt-5"> */}
-      <ToastContainer style={{ position: "fixed", top: "60px", right: "10px", zIndex: "100" }}>
+      <ToastContainer
+        style={{ position: "fixed", top: "60px", right: "10px", zIndex: "100" }}
+      >
         {toastData !== null && (
           <Toast
             style={{
@@ -1183,13 +1250,14 @@ const Dashboard = (props) => {
               border: "1px solid rgb(100,100,100)",
               boxShadow: "5px 5px 10px #fff",
               zIndex: "100",
-              backgroundColor: toastData.type === "success"
-                ? "rgb(70,245,117)"
-                : toastData.type === "error"
-                ? "rgb(251,83,83)"
-                : toastData.type === "warning"
-                ? "rgb(243,240,88)"
-                : "rgb(83,243,216)"
+              backgroundColor:
+                toastData.type === "success"
+                  ? "rgb(70,245,117)"
+                  : toastData.type === "error"
+                  ? "rgb(251,83,83)"
+                  : toastData.type === "warning"
+                  ? "rgb(243,240,88)"
+                  : "rgb(83,243,216)",
             }}
             show={showToast}
             onClose={() => {
