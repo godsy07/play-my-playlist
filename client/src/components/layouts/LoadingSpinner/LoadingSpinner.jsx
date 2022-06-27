@@ -14,7 +14,8 @@ const LoadingSpinner = () => {
         justifyContent: "center",
       }}
     >
-      <span>Loading....</span>
+      <h5 className="text-center">Loading....</h5>
+      {/* <span>Loading....</span> */}
       <div
         className='loading-spinner'
         style={{

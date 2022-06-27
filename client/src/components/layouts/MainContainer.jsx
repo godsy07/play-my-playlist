@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import jwt_decode from "jwt-decode";
 import { useCookies } from "react-cookie";
 
-
-import { DATA_URL } from "../../index";
+import LoadingSpinner from './LoadingSpinner/LoadingSpinner';
 
 const MainContainer = () => {
-
   const location = useLocation();
   const history = useNavigate();
-  
+
   const [cookies] = useCookies(["playlist_token"]);
 
   const [loaded, setLoaded] = useState(false);
@@ -27,39 +24,47 @@ const MainContainer = () => {
       if (cookies.playlist_token) {
         var decoded = jwt_decode(cookies.playlist_token);
         if (decoded) {
-          // setAuthUser(true);
           if (location.pathname === "/login-signup") {
             history("../home");
           }
         }
       } else {
-        if (!(location.pathname === "/home" || location.pathname === "/login-signup")) {
+        if (
+          !(
+            location.pathname === "/home" ||
+            location.pathname === "/login-signup"
+          )
+        ) {
           history("../login-signup");
         }
       }
       setLoaded(true);
-    } catch(e) {
-      if (!(location.pathname === "/home" || location.pathname === "/login-signup")) {
+    } catch (e) {
+      if (
+        !(
+          location.pathname === "/home" || location.pathname === "/login-signup"
+        )
+      ) {
         history("../home");
       }
       setLoaded(true);
     }
   }
 
-
   if (loaded) {
     return (
       <div className='main-container-div'>
-          <Outlet />
+        <Outlet />
       </div>
-    )
+    );
   } else {
     return (
-      <div className='main-container-div'>
-          <h1>Loading.......</h1>
+      <div className='main-container-div d-flex justify-content-center mt-5'>
+        {/* <h1>Loading.......</h1> */}
+        <LoadingSpinner />
       </div>
-    )
+    );
   }
-}
+};
 
-export default MainContainer
+export default MainContainer;

@@ -116,8 +116,8 @@ io.on("connection", (socket) => {
               formatMessages(
                 botName,
                 null,
-                // `${user.name} joined the PlayMyPlayList room.`
-                `${user.name.split(" ")[0]} joined the PlayMyPlayList room.`
+                `${user.name} joined the PlayMyPlayList room.`
+                // `${user.name.split(" ")[0]} joined the PlayMyPlayList room.`
               )
             );
         }

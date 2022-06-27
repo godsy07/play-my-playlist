@@ -40,6 +40,15 @@ import GameRoom from "../GameRoom/GameRoom";
 // import { NotificationToast } from "../../functionalities/pageFunctions";
 
 let socket;
+const iceServers = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun2.l.google.com:19302" },
+    { urls: "stun:stun3.l.google.com:19302" },
+    { urls: "stun:stun4.l.google.com:19302" },
+  ],
+};
 
 const Dashboard = (props) => {
   let history = useNavigate();
@@ -99,42 +108,63 @@ const Dashboard = (props) => {
 
   const [showPlaySong, setShowPlaySong] = useState(false);
   const [songURL, setSongURL] = useState("");
-
+  
   const [showVoteCollectModal, setShowVoteCollectModal] = useState(false);
+  
+  const [localStream, setLocalStream] = useState(null);
+  const mediaConstraints = {
+    audio: false,
+    video: true,
+  };
 
   const setUserDetails = async () => {
     fetchDetails();
-    // Set userID, UserName/GuestName, RoomID
-    // setUserID(props.userInfo._id);
-    // setGuestName(props.userInfo.name);
-    // // setRoomID(room_id);
-    // fetchRoomDetails(room_id);
-    // fetchRoomPlayers(id);
-    // fetchSongs(id, props.userInfo._id);
   };
 
   const fetchDetails = () => {
     try {
       if (cookies.playlist_token) {
         var decoded = jwt_decode(cookies.playlist_token);
-        
+
         if (decoded) {
           // console.log(decoded)
-          fetchUserData(decoded.id)
+          fetchUserData(decoded.id);
           setUserID(decoded.id);
           setGuestName(decoded.user_name);
           // setRoomID(room_id);
+          fetchUserDetails(id,decoded.id);
           fetchRoomDetails(room_id);
-          fetchRoomPlayers(id);
+          // fetchRoomPlayers(id);
           fetchSongs(id, decoded.id);
         }
       }
-    } catch(error) {
-      console.log("error")
-      console.log(error)
+    } catch (error) {
+      console.log("error");
+      console.log(error);
+    }
+  };
+
+  const fetchUserDetails = async (room_id,user_id) => {
+    try{
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/room//get-user-room-details`,
+        {
+          room_id,
+          user_id,
+        }
+      );
+
+      if (response.status === 200) {
+        console.log(response.data);
+      }
+    } catch(error){
+      if(error.response){
+        console.log(error.response);
+      } else {
+        console.log(error);
+      }
     }
   }
-
   // Function to set user Details
   const fetchUserData = async (user_id) => {
     try {
@@ -149,15 +179,14 @@ const Dashboard = (props) => {
         console.log(response.data.userInfo);
         setUserInfo(response.data.userInfo);
       }
-
-    } catch(error) {
+    } catch (error) {
       if (error.response) {
         console.log(error.response);
       } else {
         console.log(error);
       }
     }
-  }
+  };
 
   // Function to fetch room Details
   const fetchRoomDetails = async (room_id) => {
@@ -207,7 +236,7 @@ const Dashboard = (props) => {
 
       if (response.status === 200) {
         // console.log("fetchRoomPlayers function called");
-        // console.log(response);
+        console.log(response);
         setRoomPlayers(response.data.roomUsers);
       }
     } catch (error) {
@@ -267,6 +296,16 @@ const Dashboard = (props) => {
     }
   };
 
+  const fetchLocalStreamVideo = async () => {
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+      setLocalStream(stream);
+    } catch (error) {
+      console.error("Could not get user media", error);
+    }
+  };
+
   useEffect(() => {
     // Run only on mounting of all components
     // if (!props.location.state) {
@@ -279,14 +318,7 @@ const Dashboard = (props) => {
   useEffect(() => {
     socket = io(ENDPOINT);
 
-    // let stream;
-    // try {
-    //   stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-    //   setStreamVideo(stream);
-    // } catch(error) {
-    //   console.log("Media devices error");
-    //   console.log(error);
-    // }
+    fetchLocalStreamVideo();
 
     if (userID.length !== 0) {
       if (!joinRoomStatus) {
@@ -294,9 +326,6 @@ const Dashboard = (props) => {
           user_id: userID,
           room_id: roomID,
           name: guestName,
-          songs_list: PlayerSongsList,
-          song_count: PlayerSongCount,
-          video_stream: streamVideo,
         });
         setJoinRoomStatus(true);
       }
@@ -365,8 +394,8 @@ const Dashboard = (props) => {
       });
 
       socket.on("roomUsers", ({ users }) => {
-        console.log("roomUsers");
-        console.log(users);
+        console.log("roomUsers")
+        console.log(users)
         if (users) {
           // setRoomPlayers(users);
           fetchRoomPlayers(roomObjID);
@@ -1087,6 +1116,9 @@ const Dashboard = (props) => {
         let userVoteData = response.data.roomUsers.find(
           (user) => user._id === userID
         );
+        // let userVoteData = response.data.roomUsers.find(
+        //   (user) => user._id === userID
+        // );
         setUserData(userVoteData);
         // console.log(userVoteData);
 

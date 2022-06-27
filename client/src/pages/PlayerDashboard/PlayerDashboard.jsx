@@ -1,17 +1,12 @@
 import React from "react";
 import { Container, Row, Col, Form, InputGroup, Button } from "react-bootstrap";
 import AvatarIcon from "../../components/AvatarIcon/AvatarIcon";
-import {
-  FaPlay,
-  FaMusic,
-  FaCloudUploadAlt,
-  FaPlusCircle,
-  FaTrashAlt,
-} from "react-icons/fa";
 
 import "./player-dashboard.styles.css";
 import PlayInstructionsModal from "../../components/PlayInstructions/PlayInstructions";
-import { DATA_URL } from "../..";
+import SongListDiv from "../../components/SongListDiv";
+import PlayerLobby from "../../components/PlayerLobby";
+import GameRulesButton from "../../components/GameRulesButton";
 
 const PlayerDashboard = ({
   GameStatus,
@@ -37,7 +32,6 @@ const PlayerDashboard = ({
   onClickRemoveSong,
   onClickStartGame,
 }) => {
-
   return (
     <>
       <div
@@ -70,156 +64,34 @@ const PlayerDashboard = ({
               xs={12}
               className='d-flex justify-content-center align-items-center'
             >
-              <Button
-                size='lg'
-                style={{ height: "60px", width: "100%", borderRadius: "10px" }}
-                onClick={roomButtonOnClick}
-              >
-                Room Rules
-              </Button>
+              <GameRulesButton host_rules={roomDetails && roomDetails.room_rules} />
             </Col>
           </Row>
-          <PlayInstructionsModal show={showRules} onHide={onHideModal}>
-            Game rules set by the Host.
-          </PlayInstructionsModal>
         </Container>
-        <Container
-          className='px-4 py-2'
-          style={{
-            backgroundColor: "rgb(255, 210, 210)",
-            minHeight: "200px",
-            borderRadius: "5px",
-          }}
-        >
-          <div className='w-full text-center mb-3'>
-            <h3>Waiting Lobby...</h3>
-          </div>
-          <div className='profile-icons-div'>
-            {roomPlayers.length !== 0 &&
-              roomPlayers.map((item, index) => (
-                <div
-                  key={index}
-                  // className='d-flex flex-column justify-content-center align-items-center p-2 m-1'
-                  className='d-flex flex-column align-items-center p-2 m-1 text-center'
-                >
-                  <AvatarIcon
-                    imageUrl={ item.profile_pic_url && DATA_URL +"/"+ item.profile_pic_url }
-                    // statusDetails={true}
-                    statusDetails='connected'
-                    showStatus={true}
-                    streamButtons={true}
-                    streamData={streamVideo}
-                    passAudio={passAudio}
-                    passVideo={passVideo}
-                    toggleAudio={toggleAudio}
-                    toggleVideo={toggleVideo}
-                    // toggleAudio={() => setPassAudio(!passAudio)}
-                    // toggleVideo={() => setPassVideo(!passVideo)}
-                  />
-                  <span>{item.name.split(" ")[0]}</span>
-                  <span>
-                    {item.songsCount ? item.songsCount : "No"} songs added
-                  </span>
-                </div>
-              ))}
-          </div>
-        </Container>
+        <PlayerLobby
+          roomPlayers={roomPlayers}
+          streamVideo={streamVideo}
+          passAudio={passAudio}
+          passVideo={passVideo}
+          toggleAudio={toggleAudio}
+          toggleVideo={toggleVideo}
+        />
       </div>
       <div
         className={`${
           GameStatus === "started" ? "d-none" : "d-block"
         } add-songs-div`}
       >
-        <Container className='text-center py-3'>
-          <Row className='mb-2'>
-            <h3 className='text-white'>Add your songs here....</h3>
-          </Row>
-          <Row xs={1} md={2} className='mb-2 px-4'>
-            <Col xs={12} md={10}>
-              <InputGroup>
-                <Form.Control
-                  type='url'
-                  value={songLink}
-                  onChange={onChangeSongLink}
-                  placeholder='Place link here'
-                />
-                <InputGroup.Text className='px-1'>
-                  <FaCloudUploadAlt
-                    style={{ fontSize: "24px", width: "50px" }}
-                  />
-                </InputGroup.Text>
-              </InputGroup>
-            </Col>
-            <Col xs={12} md={2}>
-              <Button
-                variant='light'
-                className='d-flex w-100 justify-content-center align-items-center'
-                onClick={onClickAddSong}
-                title="Add Song"
-              >
-                <FaPlusCircle className='me-1 text-success' size={22} />
-                ADD
-              </Button>
-            </Col>
-          </Row>
-          {songsList.length !== 0 &&
-            songsList.map((song, index) => (
-              <Row key={index} className='mb-2 px-4'>
-                <Col xs={12} md={10}>
-                  <InputGroup style={{ position: "relative" }}>
-                    <span
-                      style={{
-                        position: "absolute",
-                        zIndex: "4",
-                        left: "3px",
-                        top: "3px",
-                        height: "33px",
-                        width: "35px",
-                        overflow: "hidden",
-                        backgroundColor: "rgb(250, 100, 100)",
-                        boxShadow:
-                          "1px 1px 3px rgb(100,100,100), -1px -1px 3px rgb(100,100,100)",
-                        border: "2px solid #fff",
-                        borderRadius: "50%",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        color: "#fff",
-                      }}
-                    >
-                      <FaMusic />
-                    </span>
-                    <Form.Control
-                      type='url'
-                      value={song.song}
-                      style={{
-                        paddingLeft: "50px",
-                        borderRadius: "50px 0 0 50px",
-                      }}
-                      disabled
-                    />
-                    <InputGroup.Text className='px-1'>
-                      <FaPlay  onClick={(e) => handlePlaySong(e,song.song)} style={{ fontSize: "24px", width: "50px" }} />
-                    </InputGroup.Text>
-                  </InputGroup>
-                </Col>
-                <Col xs={12} md={2}>
-                  <Button
-                    variant='danger'
-                    className='d-flex w-100 justify-content-center align-items-center'
-                    onClick={(e) => onClickRemoveSong(e, song._id, song.song)}
-                    title="Delete Song"
-                  >
-                    <FaTrashAlt className='ms-1' size={22} />
-                    REMOVE
-                  </Button>
-                </Col>
-              </Row>
-            ))}
-        </Container>
-        <button className='start-game-button' onClick={(e) => onClickStartGame(e,roomObjID)}>
-          START GAME
-        </button>
+        <SongListDiv
+          roomObjID={roomObjID}
+          songLink={songLink}
+          songsList={songsList}
+          onChangeSongLink={onChangeSongLink}
+          onClickAddSong={onClickAddSong}
+          handlePlaySong={handlePlaySong}
+          onClickRemoveSong={onClickRemoveSong}
+          onClickStartGame={onClickStartGame}
+        />
       </div>
     </>
   );

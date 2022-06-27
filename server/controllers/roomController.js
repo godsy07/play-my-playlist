@@ -176,6 +176,60 @@ const getRoomDetails = async (req, res) => {
   }
 };
 
+const getUserRoomDetails = async (req, res) => {
+  try {
+    const { room_id, user_id } = req.body;
+
+    const schema = Joi.object({
+      room_id: Joi.string().alphanum().min(4).required(),
+      user_id: Joi.string().required(),
+    });
+    // Validation of details recieved for join room starts here
+    const validate = schema.validate({ room_id, user_id });
+    const { error } = validate;
+    if (error) {
+      return res.status(400).json({ success: false, message: error.details[0].message });
+    }
+
+    let userRoomData = await UserModel.aggregate([
+      {
+        $match: { _id: ObjectId(user_id), active_room: ObjectId(room_id) },
+      },
+      {
+        $lookup: {
+          from: "songs",
+          localField: "_id",
+          foreignField: "player_id",
+          as: "songs",
+        },
+      },
+      { $addFields: { songsCount: { $size: "$songs" } } },
+      {
+        $project: {
+          activation: 0,
+          password: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          game_status: 0,
+          "__v": 0,
+          "songs.song": 0,
+          "songs.player_id": 0,
+          "songs.room_id": 0,
+          "songs.song_status": 0,
+          "songs.__v": 0,
+        },
+      },
+    ]);
+
+    return res.status(200).json({ status: "success", userRoomData: userRoomData[0], message: "Successfully fetched user details of room." });
+  } catch(error){
+    console.log(error)
+    return res.status(500).json({ status: "error", error, message: "Something went wrong in server." });
+  }
+
+}
+
+
 const getRoomUsers = async (req, res) => {
   const { room_id, song_id } = req.body;
   try {
@@ -188,80 +242,6 @@ const getRoomUsers = async (req, res) => {
     if (error) {
       return res.status(400).json({ success: false, message: error.details[0].message });
     }
-
-    // let roomUsers;
-    // const usersTest= await UserModel.where("active_room").equals(roomData[0]._id).populate('active_room');
-    // if (!song_id) {
-      
-    //   roomUsers = await UserModel.aggregate([
-    //     { $match: { active_room: ObjectId(room_id) } },
-    //     {
-    //       $lookup: {
-    //         from: 'songs',
-    //         localField: '_id',
-    //         foreignField: 'player_id',
-    //         as: 'songs',
-    //       },
-    //     },
-    //     { $addFields: {songsCount: {$size: "$songs"}}},
-    //     {
-    //       $project: {
-    //         "songs.song": 0,
-    //         "songs.player_id": 0,
-    //         "songs.room_id": 0,
-    //     }}
-    //   ]);
-
-    // } else {
-
-    //   roomUsers = await UserModel.aggregate([
-    //     {
-    //       $match: { active_room: ObjectId(room_id) }
-    //     },
-    //     {
-    //       $lookup: {
-    //         from: 'songs',
-    //         localField: '_id',
-    //         foreignField: 'player_id',
-    //         as: 'songs',
-    //       },
-    //     },
-    //     {
-    //       $lookup: {
-    //         from: 'votes',
-    //         as: 'vote',
-    //         let: { room_id: '$active_room', player_id: "$_id" },
-    //         pipeline: [
-    //           {
-    //             $match: {
-    //               $expr: {
-    //                 $and: [
-    //                   { $eq: ['$room_id', '$$room_id'] },
-    //                   { $eq: ['$player_id', '$$player_id'] },
-    //                   { $eq: ['$song_id', ObjectId(song_id)] },
-    //                 ]
-    //               }
-    //             }
-    //           }
-    //         ]
-    //       },
-    //     },
-    //     { $unwind: "$vote" },
-    //     { $addFields: {songsCount: {$size: "$songs"}}},
-    //     {
-    //       $project: {
-    //         "activation": 0,
-    //         "password": 0,
-    //         "createdAt": 0,
-    //         "updatedAt": 0,
-    //         "game_status": 0,
-    //         "songs.song": 0,
-    //         "songs.player_id": 0,
-    //         "songs.room_id": 0,
-    //     }}
-    //   ]);
-
-    // }
     
     let roomUsers = await UserModel.aggregate([
       {
@@ -428,6 +408,7 @@ module.exports = {
   checkRoom,
   joinRoom,
   getRoomDetails,
+  getUserRoomDetails,
   getRoomUsers,
   startGameRoom,
   deleteRoomVotes,

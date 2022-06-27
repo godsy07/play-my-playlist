@@ -86,8 +86,8 @@ const GameRoom = ({
                         ? userData.voted_player.length !== 0 &&
                           userData.vote[0].song_id === currentSongID &&
                           userData.voted_player[0]._id === player._id
-                            ? "rgb(102, 255, 102)"
-                            : "rgb(153, 204, 255)"
+                          ? "rgb(102, 255, 102)"
+                          : "rgb(153, 204, 255)"
                         : "rgb(153, 204, 255)",
                     height: "140px",
                     width: "140px",
@@ -97,8 +97,8 @@ const GameRoom = ({
                       ? userData.voted_player.length !== 0 &&
                         userData.vote[0].song_id === currentSongID &&
                         userData.voted_player[0]._id === player._id
-                          ? "You have voted this player"
-                          : "Click here to vote this player"
+                        ? "You have voted this player"
+                        : "Click here to vote this player"
                       : "Click here to vote this player"
                   }
                   // onClick={setVotedPlayer(player._id)}
@@ -119,10 +119,7 @@ const GameRoom = ({
           </Modal.Body>
           {userID === hostID && (
             <Modal.Footer>
-              <Button
-                variant='primary'
-                onClick={() => handleVotes()}
-              >
+              <Button variant='primary' onClick={() => handleVotes()}>
                 <FaThumbsUp size={20} className='me-2' />
                 Submit
               </Button>
@@ -370,10 +367,15 @@ const GameRoom = ({
                         AvatarWidth='180'
                         votedStatus={true}
                         votedStatusValue={
-                          player.voted_player.length !== 0 && player.vote[0].song_id === currentSongID ? true : false
+                          player.voted_player.length !== 0
+                            ? player.vote[0].song_id === currentSongID
+                              ? true
+                              : false
+                            : false
                         }
                         votedStatusText={
-                          player.voted_player.length !== 0 && player.vote[0].song_id === currentSongID
+                          player.voted_player.length !== 0 &&
+                          player.vote[0].song_id === currentSongID
                             ? "Player has voted"
                             : "Player has not voted"
                         }
@@ -387,9 +389,10 @@ const GameRoom = ({
                         // toggleVideo={() => setPassVideo(!passVideo)}
                       />
                     </div>
-                    <div className="text-center">
+                    <div className='text-center'>
                       {player.name.split(" ")[0]}{" "}
-                      {player.voted_player.length !== 0 && player.vote[0].song_id === currentSongID &&
+                      {player.voted_player.length !== 0 &&
+                        player.vote[0].song_id === currentSongID &&
                         "has voted " + player.voted_player[0].name + "."}
                     </div>
                   </div>
@@ -399,11 +402,14 @@ const GameRoom = ({
           ) : (
             <>
               <Row>
-                <Col md={8} className="d-flex flex-column justify-content-center align-content-center" style={{ borderRadius: "10px 0 0 10px" }}>
-
+                <Col
+                  md={8}
+                  className='d-flex flex-column justify-content-center align-content-center'
+                  style={{ borderRadius: "10px 0 0 10px" }}
+                >
                   {topPlayer !== null && (
-                    <div className="d-flex flex-column justify-content-center align-items-center">
-                      <h3 className="text-center">Winner</h3>
+                    <div className='d-flex flex-column justify-content-center align-items-center'>
+                      <h3 className='text-center'>Winner</h3>
                       <AvatarIcon
                         imageUrl={
                           topPlayer.profile_pic_url &&
@@ -411,7 +417,7 @@ const GameRoom = ({
                         }
                         AvatarWidth='180'
                         showStatus={true}
-                        statusDetails="winner"
+                        statusDetails='winner'
                         streamButtons={true}
                         streamData={streamVideo}
                         passAudio={passAudio}
@@ -421,17 +427,26 @@ const GameRoom = ({
                         // toggleAudio={() => setPassAudio(!passAudio)}
                         // toggleVideo={() => setPassVideo(!passVideo)}
                       />
-                      <div className="text-center">
-                        {topPlayer.name.split(" ")[0] + " : " + topPlayer.score_points[0].points + " points"}
+                      <div className='text-center'>
+                        {topPlayer.name.split(" ")[0] +
+                          " : " +
+                          topPlayer.score_points[0].points +
+                          " points"}
                       </div>
                     </div>
                   )}
 
-                  <div style={{ minHeight: "260px" }} className='my-3 d-flex justify-content-between'>
+                  <div
+                    style={{ minHeight: "260px" }}
+                    className='my-3 d-flex justify-content-between'
+                  >
                     {scoresData.map((player, index) => {
                       if (index !== 0) {
                         return (
-                          <div key={index} className='d-flex flex-column justify-content-center align-items-center'>
+                          <div
+                            key={index}
+                            className='d-flex flex-column justify-content-center align-items-center'
+                          >
                             <AvatarIcon
                               imageUrl={
                                 player.profile_pic_url &&
@@ -447,8 +462,11 @@ const GameRoom = ({
                               // toggleAudio={() => setPassAudio(!passAudio)}
                               // toggleVideo={() => setPassVideo(!passVideo)}
                             />
-                            <div className="text-center">
-                              {player.name.split(" ")[0] + ": " + player.score_points[0].points + " points"}
+                            <div className='text-center'>
+                              {player.name.split(" ")[0] +
+                                ": " +
+                                player.score_points[0].points +
+                                " points"}
                             </div>
                           </div>
                         );

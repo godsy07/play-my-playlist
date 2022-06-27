@@ -7,7 +7,7 @@ import HeaderDiv from "../../components/Header/Header";
 import FooterComponent from "../../components/Footer/FooterComponent";
 import CardComponent from "../../components/CardComponent/CardComponent";
 import FloatingDiv from "../../components/FloatingDiv/FloatingDiv";
-import LoadingSpinner from "../../components/layouts/LoadingSpinner/LoadingSpinner";
+// import LoadingSpinner from "../../components/layouts/LoadingSpinner/LoadingSpinner";
 
 import "./homepage.styles.css";
 import { DATA_URL } from "../..";
@@ -23,7 +23,7 @@ const HomePage = () => {
 
   // states for useInfo
   const [isLoaded, setIsLoaded] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
+  // const [userInfo, setUserInfo] = useState(null);
   const [userSignInStatus, setUserSignInStatus] = useState(false);
 
   useEffect(() => {
@@ -38,15 +38,15 @@ const HomePage = () => {
       var decoded = await jwt_decode(cookies.playlist_token);
       if (decoded) {
         setUserSignInStatus(true);          
-        const response = await axios.get(
-          `${DATA_URL}/playlist/api/user/get-data`,
-          {
-            withCredentials: true,
-          }
-        );
-        console.log(response);
-        setUserInfo(response.data);
-        setIsLoaded(true);
+        // const response = await axios.get(
+        //   `${DATA_URL}/playlist/api/user/get-data`,
+        //   {
+        //     withCredentials: true,
+        //   }
+        // );
+        // console.log(response);
+        // setUserInfo(response.data);
+        // setIsLoaded(true);
       }
       setIsLoaded(true);
     } catch (err) {
@@ -99,13 +99,13 @@ const HomePage = () => {
     }
   };
 
-  if (!isLoaded) {
-    return (
-      <div className='main-container mt-5 d-flex justify-content-center'>
-        <LoadingSpinner />
-      </div>
-    );
-  } else {
+  // if (!isLoaded) {
+  //   return (
+  //     <div className='main-container mt-5 d-flex justify-content-center'>
+  //       <LoadingSpinner />
+  //     </div>
+  //   );
+  // } else {
     return (
       <div className='main-container'>
         <FloatingDiv
@@ -166,21 +166,6 @@ const HomePage = () => {
         <Container>
           <Row>
             <Col>
-              {/* Just for testing the working of authenticate middleware in backend */}
-              {/* <button
-              onClick={async (e) => {
-                e.preventDefault();
-                const res = await axios.get(
-                  `${DATA_URL}/playlist/api/user/get-data`,
-                  {
-                    withCredentials: true,
-                  }
-                );
-                console.log(res);
-              }}
-            >
-              Click Me
-            </button> */}
               <HeaderDiv
                 headerText='A multiplayer Social Game to play along with your friends in a private
           room.'
@@ -205,7 +190,7 @@ const HomePage = () => {
         <FooterComponent />
       </div>
     );
-  }
+  // }
 };
 
 export default HomePage;

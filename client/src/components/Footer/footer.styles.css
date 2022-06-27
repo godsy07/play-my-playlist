@@ -39,10 +39,11 @@
 
 .footer-image {
   margin: 0;
+  margin-bottom: 10px;
   margin-top: 10px;
   padding: 0;
-  /* height: 80px; */
-  height: 180px;
+  height: 150px;
+  /* height: 180px; */
   width: 100%;
 }
 

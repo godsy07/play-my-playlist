@@ -8,6 +8,7 @@ router.post("/create-room", RoomController.createRoom);
 router.post("/check-room", RoomController.checkRoom);
 router.post("/join-room", RoomController.joinRoom);
 router.post("/get-room-details", RoomController.getRoomDetails);
+router.post("/get-user-room-details", RoomController.getUserRoomDetails);
 router.post("/get-room-users", RoomController.getRoomUsers);
 router.post("/start-game", RoomController.startGameRoom);
 router.post("/reset-room-songs-status", RoomController.resetRoomSongsStatus);
