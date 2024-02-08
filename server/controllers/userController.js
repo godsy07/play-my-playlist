@@ -5,7 +5,7 @@ const fs = require("fs");
 
 const UserModel = require("../model/userModel");
 const verifyPasswordModel = require("../model/verifyPasswordModel");
-const { nodemailerTransporter } = require("../config/nodemail");
+const { sendMail } = require("../utils/utilFunctions");
 
 // check user exists controller
 const checkUserExists = async (req, res) => {
@@ -68,7 +68,6 @@ const createUser = async (req, res) => {
     return res.status(400).json({ success: false, message });
   } else {
     try {
-      
       // send verify passcodes to email
       verifyUser = await verifyUserSignup(email, name);
       // console.log(verifyUser);
@@ -84,7 +83,9 @@ const createUser = async (req, res) => {
 
       message = "Verification passcode sent through email";
       // message = "User account has been created successfully.";
-      return res.status(200).json({ success: true, userDetails: data, message });
+      return res
+        .status(200)
+        .json({ success: true, userDetails: data, message });
     } catch (error) {
       // message = error.message;
       console.log(error);
@@ -191,7 +192,7 @@ const verifyPassCode = async (req, res) => {
     verifyUserData = await UserModel.updateOne(
       { email },
       { $set: { activation: true } },
-      { new: true }
+      { new: true },
     );
     message = "Successfully activated your account";
 
@@ -211,7 +212,6 @@ const verifyUserSignup = async (user_email, name) => {
     // set a random 6 digits passcode
     let pass_code = Math.floor(100000 + Math.random() * 900000);
     // Send the codes in email to the user
-    // let send_email = await nodemailerTransporter.sendMail({
     let send_mail, mail_body, verifyData;
 
     let check_verify = await verifyPasswordModel.find({ user_email });
@@ -232,7 +232,7 @@ const verifyUserSignup = async (user_email, name) => {
       verifyData = await verifyPasswordModel.updateOne(
         { user_email },
         { $set: { pass_code } },
-        { new: true }
+        { new: true },
       );
       // console.log("updated verifyData")
       // console.log(verifyData)
@@ -245,15 +245,13 @@ const verifyUserSignup = async (user_email, name) => {
                       <br/><br/>
                     <p style="font-size: 10px; background-color: yellow"><i><b>Note:</b> Please do not share this passcode to anyone. This is only valid for ${process.env.AUTH_EXPIRES} minutes.</i></p>`;
     }
-    
+
     // console.log(mail_body);
-    send_mail = await nodemailerTransporter.sendMail({
-      from: process.env.AUTH_EMAIL,
-      to: user_email,
-      subject: `PassCode verification Mail`,
-      html: mail_body,
-      replyTo: process.env.AUTH_REPLY_EMAIL,
-    });
+    send_mail = await sendMail(
+      user_email,
+      `PassCode verification Mail`,
+      mail_body,
+    );
 
     return { verifyData, send_mail };
   } catch (error) {
@@ -310,7 +308,7 @@ const loginUser = async (req, res) => {
     const token = jwt.sign(
       { id: user._id, user_name: user.name },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: expireTime }
+      { expiresIn: expireTime },
     );
     // res.cookie("playlist_token", token);
     return res.status(200).json({ success: true, token, message });
@@ -353,7 +351,7 @@ const forgotPassword = async (req, res) => {
     const updatedata = await UserModel.updateOne(
       { email: email },
       { $set: { password: value } },
-      { new: true }
+      { new: true },
     );
     if (!updatedata) {
       message = " Reset password is failed.";
@@ -421,7 +419,7 @@ const userProfileEdit = async (req, res) => {
     if (user.profile_pic_url !== null && profile_pic_url !== null) {
       // fs.unlinkSync(user.profile_pic_url);
     }
-    
+
     let updatedData = null;
     const isMatch = await user.matchPassword(old_password);
     if (!isMatch) {
@@ -432,14 +430,16 @@ const userProfileEdit = async (req, res) => {
     // If already exist file delete it
     // updating details
     if (profile_pic_url === null) {
-      updatedData = await UserModel.update({ _id: user_id },
+      updatedData = await UserModel.update(
+        { _id: user_id },
         { password: new_password },
-        { new: true }
+        { new: true },
       );
     } else {
-      updatedData = await UserModel.update({ _id: user_id },
+      updatedData = await UserModel.update(
+        { _id: user_id },
         { password: new_password, profile_pic_url: profilePic.filename },
-        { new: true }
+        { new: true },
       );
     }
     if (!updatedData) {
