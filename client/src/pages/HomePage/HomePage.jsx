@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCookies } from "react-cookie";
-import jwt_decode from "jwt-decode"
+import jwt_decode from "jwt-decode";
 import { Container, Row, Col, Button } from "react-bootstrap";
 import HeaderDiv from "../../components/Header/Header";
 import FooterComponent from "../../components/Footer/FooterComponent";
@@ -16,7 +16,7 @@ import Swal from "sweetalert2";
 
 const HomePage = () => {
   let history = useNavigate();
-  const [ cookies, removeCookie ] = useCookies(["playlist_token"]);
+  const [cookies, removeCookie] = useCookies(["playlist_token"]);
   const positionValue = [0, 16]; // postion left and top, in vw and vh respectively
   const paddingValue = [10, 5, 10, 5]; // top, right, bottom, left in pixels
   const borderRadiusValue = [0, 20, 20, 0]; // left top, right top, right bottom, left bottom in pixels
@@ -30,19 +30,19 @@ const HomePage = () => {
     if (!isLoaded) {
       checkValidToken();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded]);
 
   const checkValidToken = async () => {
     try {
       var decoded = await jwt_decode(cookies.playlist_token);
       if (decoded) {
-        setUserSignInStatus(true);          
+        setUserSignInStatus(true);
         const response = await axios.get(
           `${DATA_URL}/playlist/api/user/get-data`,
           {
             withCredentials: true,
-          }
+          },
         );
         console.log(response);
         setUserInfo(response.data);
@@ -67,12 +67,12 @@ const HomePage = () => {
         withCredentials: true,
       });
       if (response.status === 200) {
-        console.log('logout');
+        console.log("logout");
         removeCookie("playlist_token");
         history({
           pathname: "/",
           search: "?logout=success",
-        })
+        });
         Swal.fire({
           icon: "success",
           title: "Success",
@@ -85,14 +85,14 @@ const HomePage = () => {
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: error.response.data.message
+          text: error.response.data.message,
         });
       } else {
         // console.log(error.message);
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: "Something went wrong."
+          text: "Something went wrong.",
         });
       }
       return;
@@ -101,53 +101,69 @@ const HomePage = () => {
 
   if (!isLoaded) {
     return (
-      <div className='main-container mt-5 d-flex justify-content-center'>
+      <div className="main-container mt-5 d-flex justify-content-center">
         <LoadingSpinner />
       </div>
     );
   } else {
     return (
-      <div className='main-container'>
+      <div className="main-container">
         <FloatingDiv
           position={positionValue}
           padding={paddingValue}
           borderRadius={borderRadiusValue}
-          bgColor='orange'
-          textDivColor='red'
-          textColor='black'
-          color='white'
+          bgColor="orange"
+          textDivColor="red"
+          textColor="black"
+          color="white"
           title={`${
-            !userSignInStatus ? "It seems you are not signed in." : "You are logged In"
+            !userSignInStatus
+              ? "It seems you are not signed in."
+              : "You are logged In"
             // !userInfo ? "It seems you are not signed in." : "You are logged In"
           }`}
         >
           {!userSignInStatus ? (
-          // {!userInfo ? (
-            <div className='d-flex justify-content-around w-100'>
+            // {!userInfo ? (
+            <div className="d-flex justify-content-around w-100">
               <Button
-                variant='warning'
-                className='rounded-pill border-1 border-dark'
-                onClick={() =>
-                  history({
-                    pathname: "/login-signup",
-                    state: {
-                      signUp: false,
-                    },
-                  })
+                variant="warning"
+                className="rounded-pill border-1 border-dark"
+                onClick={
+                  () =>
+                    history("/login-signup", {
+                      // pathname: "/login-signup",
+                      state: {
+                        signUp: false,
+                      },
+                    })
+                  // history({
+                  //   pathname: "/login-signup",
+                  //   state: {
+                  //     signUp: false,
+                  //   },
+                  // })
                 }
               >
                 Log In
               </Button>
               <Button
-                variant='info'
-                className='rounded-pill border-1 border-dark'
-                onClick={() =>
-                  history({
-                    pathname: "/login-signup",
-                    state: {
-                      signUp: true,
-                    },
-                  })
+                variant="info"
+                className="rounded-pill border-1 border-dark"
+                onClick={
+                  () =>
+                    history("/login-signup", {
+                      // pathname: "/login-signup",
+                      state: {
+                        signUp: true,
+                      },
+                    })
+                  // history({
+                  //   pathname: "/login-signup",
+                  //   state: {
+                  //     signUp: true,
+                  //   },
+                  // })
                 }
               >
                 Sign Up
@@ -155,8 +171,8 @@ const HomePage = () => {
             </div>
           ) : (
             <Button
-              variant='warning'
-              className='rounded-pill border-1 border-dark mt-2'
+              variant="warning"
+              className="rounded-pill border-1 border-dark mt-2"
               onClick={handleLogout}
             >
               Log Out
@@ -182,22 +198,22 @@ const HomePage = () => {
               Click Me
             </button> */}
               <HeaderDiv
-                headerText='A multiplayer Social Game to play along with your friends in a private
-          room.'
+                headerText="A multiplayer Social Game to play along with your friends in a private
+          room."
               />
             </Col>
           </Row>
           <Row xs={1} lg={2}>
-            <Col className='d-flex justify-content-center'>
+            <Col className="d-flex justify-content-center">
               <CardComponent
-                cardHeading='Create Room'
-                textContent='Play along with your friends'
+                cardHeading="Create Room"
+                textContent="Play along with your friends"
               />
             </Col>
-            <Col className='d-flex justify-content-center'>
+            <Col className="d-flex justify-content-center">
               <CardComponent
-                cardHeading='Join Room'
-                textContent='Play along with your friends'
+                cardHeading="Join Room"
+                textContent="Play along with your friends"
               />
             </Col>
           </Row>

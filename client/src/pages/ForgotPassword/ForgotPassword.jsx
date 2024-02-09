@@ -1,6 +1,6 @@
-import React ,{ useState } from "react";
-import { Link ,useNavigate} from "react-router-dom";
-import { Container, Button, Form } from "react-bootstrap";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Container, Button, Form, Col, Row } from "react-bootstrap";
 import "./ForgotPassword-Style.css";
 import axios from "axios";
 import { DATA_URL } from "../../index";
@@ -26,7 +26,7 @@ const ForgotPassword = (props) => {
     } else if (confirmForgotPassword.length === 0) {
       title = "Password empty";
       text = "Password should not be empty.";
-    }else if (newForgotPassword.length < 6) {
+    } else if (newForgotPassword.length < 6) {
       title = "Password too short";
       text = "Set a secure Password atleast 6 characters long.";
     } else if (newForgotPassword !== confirmForgotPassword) {
@@ -46,10 +46,13 @@ const ForgotPassword = (props) => {
   };
   const forgotUser = async () => {
     try {
-      const response = await axios.post(`${DATA_URL}/playlist/api/user/forgot-password`, {
-        email: forgotEmail,
-        password: newForgotPassword,
-      });
+      const response = await axios.post(
+        `${DATA_URL}/playlist/api/user/forgot-password`,
+        {
+          email: forgotEmail,
+          password: newForgotPassword,
+        },
+      );
       // console.log(response);
       if (response.status === 200) {
         Swal.fire({
@@ -94,43 +97,55 @@ const ForgotPassword = (props) => {
       forgotUser();
     }
   };
-    return(
-        <Container fluid className="main-box">
-        <div style={{justifyContent:'center'}}>
+  return (
+    <Container fluid>
+      <Row className="mt-5">
+        <Col xs={12} sm={12} md={2} lg={3}></Col>
+        <Col>
+          <div className="w-100 bg-light p-4 rounded">
             <h3>Forgot Password</h3>
-            <Form.Group className='mb-2'>
-              <Form.Label>Enter your EmailID</Form.Label>
+            <Form.Group className="mb-2">
+              <Form.Label>Email</Form.Label>
               <Form.Control
-                type='email'
+                type="email"
                 value={forgotEmail}
+                placeholder="Enter your email"
                 onChange={(e) => setForgotEmail(e.target.value)}
               />
             </Form.Group>
-            <Form.Group className='mb-2'>
-              <Form.Label>Enter your new password</Form.Label>
+            <Form.Group className="mb-2">
+              <Form.Label>New Password</Form.Label>
               <Form.Control
-                type='password'
+                type="password"
                 value={newForgotPassword}
+                placeholder="Set new password"
                 onChange={(e) => setnewForgotPassword(e.target.value)}
               />
             </Form.Group>
-            <Form.Group className='mb-2'>
-              <Form.Label>Confirm your password</Form.Label>
+            <Form.Group className="mb-2">
+              <Form.Label>Confirm Password</Form.Label>
               <Form.Control
-                type='password'
+                type="password"
                 value={confirmForgotPassword}
+                placeholder="Confirm Password"
                 onChange={(e) => setConfirmForgotPassword(e.target.value)}
               />
             </Form.Group>
-            <Form.Group className='mb-2'>
-            <Link to='/'>
-              <Button className='rounded-pill' onClick={handleForgotPasswordUser} >
-                Submit
-              </Button></Link>
+            <Form.Group className="mb-2">
+              <Button
+                className="rounded-pill"
+                onClick={handleForgotPasswordUser}
+              >
+                Reset Password
+              </Button>
+              &nbsp;
+              <Link to="/">Go back to Home</Link>
             </Form.Group>
-        </div>  
-
-        </Container>
-    );
+          </div>
+        </Col>
+        <Col xs={12} sm={12} md={2} lg={3}></Col>
+      </Row>
+    </Container>
+  );
 };
 export default ForgotPassword;
