@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { DATA_URL } from "../../index";
 import Swal from "sweetalert2";
 import { Row, Col, Button, Form } from "react-bootstrap";
 import { useCookies } from "react-cookie";
 
 import "./login-signup.styles.css";
+import { BASE_URL } from "../../config/constants";
+import { useUserContext } from "../../components/providers/AuthProvider";
 
 const LoginSignUp = () => {
   const history = useNavigate();
   const location = useLocation();
+  const { setUser, checkAuthUser } = useUserContext();
   const [cookies, setCookie] = useCookies();
   // State to show signup form if true
   const [signUpShow, setSignUpShow] = useState(false);
@@ -75,7 +77,7 @@ const LoginSignUp = () => {
   const createUser = async () => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/user/sign-up`,
+        `${BASE_URL}/playlist/api/user/sign-up`,
         {
           name: userName,
           user_name: userHandle,
@@ -152,13 +154,14 @@ const LoginSignUp = () => {
   // function for login api call
   const loginUser = async () => {
     try {
-      const response = await axios.post(`${DATA_URL}/playlist/api/user/login`, {
+      const response = await axios.post(`${BASE_URL}/playlist/api/user/login`, {
         email: loginEmail,
         password: loginPassword,
         rememberMe: rememberMe,
       });
       // console.log(response);
       if (response.status === 200) {
+        setCookie("playlist_token", response.data.token);
         Swal.fire({
           icon: "success",
           title: "Success",
@@ -166,7 +169,7 @@ const LoginSignUp = () => {
         });
         setLoginEmail("");
         setLoginPassword("");
-        setCookie("playlist_token", response.data.token);
+        await checkAuthUser();
         history({
           pathname: "/",
           search: "?login=success",

@@ -39,3 +39,11 @@ export const verifyEmail = async (data) => {
     url: `${BASE_URL}/playlist/api/user/verify-email`,
   });
 };
+
+export const getCurrentUser = async () => {
+  return await apiRequests({
+    method: "GET",
+    auth: true,
+    url: `${BASE_URL}/playlist/api/user/get-user-data`,
+  });
+};

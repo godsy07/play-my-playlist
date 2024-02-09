@@ -2,13 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useCookies } from "react-cookie";
-import jwt_decode from "jwt-decode"
-import { DATA_URL } from "../../index";
+import jwt_decode from "jwt-decode";
 import Swal from "sweetalert2";
 import "./join-room.styles.css";
 import MainHeaderDiv from "../../components/layouts/MainHeaderDiv/MainHeaderDiv";
 import { Container, Row, Col, Form, Button } from "react-bootstrap";
 import { IoMdEye, IoIosEyeOff } from "react-icons/io";
+import { BASE_URL } from "../../config/constants";
 
 const JoinRoom = () => {
   let history = useNavigate();
@@ -23,37 +23,36 @@ const JoinRoom = () => {
 
   useEffect(() => {
     checkValidToken();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function checkValidToken() {
     var decoded = jwt_decode(cookies.playlist_token);
-    if (decoded) {            
+    if (decoded) {
       fetchUserData(decoded.id);
     }
   }
   const fetchUserData = async (user_id) => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/user/get-user-details`,
+        `${BASE_URL}/playlist/api/user/get-user-details`,
         {
           user_id,
-        }
+        },
       );
 
       if (response.status === 200) {
         console.log(response.data.userInfo);
         setUserInfo(response.data.userInfo);
       }
-
-    } catch(error) {
+    } catch (error) {
       if (error.response) {
         console.log(error.response);
       } else {
         console.log(error);
       }
     }
-  }
+  };
 
   // Function to check if server exists
   const handleCheckServer = async (e) => {
@@ -69,8 +68,8 @@ const JoinRoom = () => {
     }
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/room/check-room`,
-        { roomID }
+        `${BASE_URL}/playlist/api/room/check-room`,
+        { roomID },
       );
       // console.log(response);
       if (response.status === 200) {
@@ -132,8 +131,8 @@ const JoinRoom = () => {
       };
       // console.log(joinData);
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/room/join-room`,
-        joinData
+        `${BASE_URL}/playlist/api/room/join-room`,
+        joinData,
       );
       if (response.status === 200) {
         // console.log("join room api call");
@@ -181,20 +180,20 @@ const JoinRoom = () => {
   };
 
   return (
-    <div className='main-container'>
+    <div className="main-container">
       <MainHeaderDiv
-        title='Create Room'
-        routeName='../CreateRoom'
+        title="Create Room"
+        routeName="../CreateRoom"
         userInfo={userInfo}
       />
-      <div className='join-room-div'>
-        <Container className='pb-1' fluid>
+      <div className="join-room-div">
+        <Container className="pb-1" fluid>
           <Row>
             <Col xs={12} sm={6} md={8} lg={9}>
               <h1>Join Room</h1>
             </Col>
             <Col xs={12} sm={6} md={4} lg={3}>
-              <Button size='lg' style={{ width: "100%" }}>
+              <Button size="lg" style={{ width: "100%" }}>
                 HOW TO PLAY
               </Button>
             </Col>
@@ -203,31 +202,31 @@ const JoinRoom = () => {
         <Container fluid>
           <Row>
             <Col xs={12} md={9}>
-              <Row className='py-2'>
+              <Row className="py-2">
                 <Form.Label>Room ID:</Form.Label>
-                <Col xs={12} md={8} className='py-1'>
+                <Col xs={12} md={8} className="py-1">
                   <Form.Control
-                    type='text'
+                    type="text"
                     value={roomID}
                     onChange={(e) => setRoomID(e.target.value)}
                   />
                 </Col>
-                <Col xs={12} md={4} className='py-1'>
+                <Col xs={12} md={4} className="py-1">
                   <Button style={{ width: "100%" }} onClick={handleCheckServer}>
                     Check Server
                   </Button>
                 </Col>
               </Row>
-              <Row className='py-2'>
+              <Row className="py-2">
                 <Form.Label> Passcode: </Form.Label>
-                <Col xs={12} md={8} className='py-1'>
+                <Col xs={12} md={8} className="py-1">
                   <Form.Control
                     type={`${viewPassword ? "text" : "password"}`}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </Col>
-                <Col xs={12} md={4} className='py-1'>
+                <Col xs={12} md={4} className="py-1">
                   <Button
                     style={{ fontSize: "20px", width: "100%" }}
                     onClick={() => setViewPassword(!viewPassword)}
@@ -238,11 +237,11 @@ const JoinRoom = () => {
               </Row>
             </Col>
           </Row>
-          <Row className='d-flex justify-content-center my-1 py-4'>
+          <Row className="d-flex justify-content-center my-1 py-4">
             <Col xs={12} sm={6} md={4} lg={3}>
               <Button
-                size='lg'
-                className='mt-5'
+                size="lg"
+                className="mt-5"
                 style={{ width: "100%" }}
                 onClick={handleJoinRoom}
               >

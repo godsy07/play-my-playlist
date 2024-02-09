@@ -10,9 +10,9 @@ import FloatingDiv from "../../components/FloatingDiv/FloatingDiv";
 import LoadingSpinner from "../../components/layouts/LoadingSpinner/LoadingSpinner";
 
 import "./homepage.styles.css";
-import { DATA_URL } from "../..";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { BASE_URL } from "../../config/constants";
 
 const HomePage = () => {
   let history = useNavigate();
@@ -39,7 +39,7 @@ const HomePage = () => {
       if (decoded) {
         setUserSignInStatus(true);
         const response = await axios.get(
-          `${DATA_URL}/playlist/api/user/get-data`,
+          `${BASE_URL}/playlist/api/user/get-data`,
           {
             withCredentials: true,
           },
@@ -63,7 +63,7 @@ const HomePage = () => {
   const handleLogout = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.get(`${DATA_URL}/playlist/api/user/logout`, {
+      const response = await axios.get(`${BASE_URL}/playlist/api/user/logout`, {
         withCredentials: true,
       });
       if (response.status === 200) {
@@ -187,7 +187,7 @@ const HomePage = () => {
               onClick={async (e) => {
                 e.preventDefault();
                 const res = await axios.get(
-                  `${DATA_URL}/playlist/api/user/get-data`,
+                  `${BASE_URL}/playlist/api/user/get-data`,
                   {
                     withCredentials: true,
                   }
