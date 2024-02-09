@@ -12,16 +12,18 @@ const getData = async (req, res) => {
 const getUserData = async (req, res) => {
   try {
     let tokenData = req.tokenData;
-    userInfo = await UserModel.findById(tokenData.id);
+    const user = await UserModel.findById(tokenData.id)
+      .select("-password")
+      .lean();
     return res.json({
-      success: true,
-      userInfo,
+      status: true,
+      user,
       message: "Successfully fetched User data.",
     });
   } catch (error) {
     return res
       .status(500)
-      .json({ success: false, message: "Failed to fetch user data." });
+      .json({ status: false, message: "Failed to fetch user data." });
   }
 };
 
