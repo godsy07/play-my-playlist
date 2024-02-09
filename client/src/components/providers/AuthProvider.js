@@ -20,7 +20,6 @@ export function AuthProvider({ children }) {
       if (decoded) {
         // check if expired
         if (decoded.exp * 1000 < Date.now()) {
-          console.log("3");
           if (user) setUser(null);
           removeCookie("playlist_token");
         } else {
@@ -28,7 +27,11 @@ export function AuthProvider({ children }) {
         }
       }
     }
-    if (!user && auth) checkAuthUser();
+    if (!user && auth) {
+      checkAuthUser();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
   const checkAuthUser = async () => {
