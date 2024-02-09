@@ -67,7 +67,6 @@ const sendMail = async (to_email, subject, mail_body) => {
 
     return { mail };
   } catch (error) {
-    console.log(error);
     return { error };
   }
 };

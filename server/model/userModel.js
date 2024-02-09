@@ -8,6 +8,11 @@ const UserSchema = new mongoose.Schema(
       min: 4,
       required: true,
     },
+    user_name: {
+      type: String,
+      min: 4,
+      required: true,
+    },
     email: {
       type: String,
       unique: true,
@@ -18,10 +23,6 @@ const UserSchema = new mongoose.Schema(
       ref: "room",
       default: null,
     },
-    // active_room: {
-    //   type: String,
-    //   default: null,
-    // },
     game_status: {
       type: Boolean,
       default: false,
@@ -40,9 +41,8 @@ const UserSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
-
 
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {

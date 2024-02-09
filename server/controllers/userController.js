@@ -1,47 +1,24 @@
 const Joi = require("joi");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const fs = require("fs");
 
 const UserModel = require("../model/userModel");
 const verifyPasswordModel = require("../model/verifyPasswordModel");
 const { sendMail } = require("../utils/utilFunctions");
-
-// check user exists controller
-const checkUserExists = async (req, res) => {
-  const { email } = req.body;
-  let message = "";
-  // fetch data from Model and check if email exists
-  try {
-    let userData = await UserModel.find({ email });
-    // console.log(`arrayLength: ${userData.length}`);
-    if (userData.length === 0) {
-      // user does not exist
-      message = "User does not exist.";
-      return res
-        .status(400)
-        .json({ success: false, message, test: req.cookies });
-    } else {
-      message = "User already exists.";
-      return res
-        .status(200)
-        .json({ success: true, message, test: req.cookies });
-      //   return res.status(200).json({ success: true, data: userData, message });
-    }
-  } catch (error) {
-    message = "Unexpected error occured.";
-    return res.status(500).json({ success: false, message });
-  }
-};
+const VerifyTokenModel = require("../model/verifyToken");
+const ResetPasswordModel = require("../model/resetPasswordToken");
 
 // Create user controller
 const createUser = async (req, res) => {
   const userInfo = req.body;
-  const { name, email } = req.body;
+  const { user_name, email } = req.body;
   let message = "";
   // Schema defination for Validation of details recieved
   const schema = Joi.object({
     name: Joi.string().min(4).required(),
+    user_name: Joi.string().min(4).required(),
     email: Joi.string().email().required(),
     password: Joi.string()
       .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
@@ -53,208 +30,159 @@ const createUser = async (req, res) => {
   const { error } = validate;
   if (error) {
     message = error.details[0].message;
-    return res.status(400).json({ success: false, message });
+    return res.status(400).json({ status: false, message });
   }
+
+  const userNameData = await UserModel.findOne({ user_name });
+  if (userNameData) {
+    return res
+      .status(400)
+      .json({ status: false, message: "This username already exists." });
+  }
+
   // Add data to database if does not exist already
-  let userData = await UserModel.find({ email });
+  let userData = await UserModel.findOne({ email });
   // Check if User exists and is verified
-  if (userData.length !== 0) {
+  if (userData) {
     // user does exists
-    if (!userData[0].activation) {
-      message = "User exists but has not been activated";
+    if (!userData.activation) {
+      message =
+        "Please verify your email using verification link to continue with login.";
+      const verifyUser = await verifyUserSignup(userData._id, email);
+      if (verifyUser.error) {
+        return res.status(500).json({
+          status: false,
+          message: "Could not send email verification link.",
+        });
+      }
     } else {
       message = "User already does exist";
     }
-    return res.status(400).json({ success: false, message });
+    return res.status(400).json({ status: false, message });
   } else {
     try {
-      // send verify passcodes to email
-      verifyUser = await verifyUserSignup(email, name);
-      // console.log(verifyUser);
-      if (verifyUser.error) {
-        return res.status(500).json({
-          success: false,
-          message: "Something unexpected error occurred",
-        });
-      }
-
       // Data is being stored in DB
       const data = await UserModel.create(userInfo);
 
-      message = "Verification passcode sent through email";
-      // message = "User account has been created successfully.";
-      return res
-        .status(200)
-        .json({ success: true, userDetails: data, message });
+      const verifyUser = await verifyUserSignup(data._id, email);
+      if (verifyUser.error) {
+        return res.status(500).json({
+          status: false,
+          message: "Could not send email verification link.",
+        });
+      }
+
+      message = "Please verify email using verification link in email.";
+      return res.status(200).json({ status: true, user: data, message });
     } catch (error) {
       // message = error.message;
       console.log(error);
       return res
         .status(500)
-        .json({ success: false, message: "Some error occurred in the server" });
+        .json({ status: false, message: "Some error occurred in the server" });
     }
-  }
-};
-
-// RESEND Passcode
-const resendPassCode = async (req, res) => {
-  try {
-    const { email } = req.body;
-    let verifyUser,
-      message = "";
-    // Schema defination for Validation of details recieved
-    const schema = Joi.object({
-      email: Joi.string().email().required(),
-    });
-    // Validation of details recieved starts here
-    const validate = schema.validate({ email });
-    const { error } = validate;
-    if (error) {
-      message = error.details[0].message;
-      return res.status(400).json({ success: false, message });
-    }
-    // Add data to database if does not exist already
-    let userData = await UserModel.find({ email });
-
-    if (userData.length === 0) {
-      message = "User does not exist";
-    } else {
-      if (userData[0].activation) {
-        return res.status(400).json({
-          success: false,
-          message: "User has already been activated",
-        });
-      }
-      let name = userData[0].name;
-      // send verify passcodes to email
-      verifyUser = await verifyUserSignup(email, name);
-      // console.log(verifyUser);
-      if (verifyUser.error) {
-        return res.status(500).json({
-          success: false,
-          message: "Something unexpected error occurred",
-        });
-      }
-
-      message = "Verification passcode sent through email";
-    }
-
-    return res.status(200).json({ success: true, message, verifyUser });
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ success: false, message: "Some error occurred in the server" });
   }
 };
 
 // verify passcode
-const verifyPassCode = async (req, res) => {
+const verifyEmail = async (req, res) => {
   try {
-    const { email, pass_code } = req.body;
-    let message = "";
+    const { user_id, token } = req.body;
     // Schema defination for Validation of details recieved
     const schema = Joi.object({
-      email: Joi.string().email().required(),
-      pass_code: Joi.string().min(6).max(6).required().label("PassCode"),
+      user_id: Joi.string().required().label("User ID"),
+      token: Joi.string().required().label("Token"),
     });
     // Validation of details recieved starts here
-    const validate = schema.validate({ email, pass_code });
+    const validate = schema.validate({ user_id, token });
     const { error } = validate;
     if (error) {
-      message = error.details[0].message;
-      return res.status(400).json({ success: false, message });
+      return res
+        .status(400)
+        .json({ status: false, message: error.details[0].message });
     }
 
-    let verifyUserData = await verifyPasswordModel.find({ user_email: email });
-    if (verifyUserData.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Please get pass code to activate your account",
-      });
+    // check valid user id
+    const user = await UserModel.findById(user_id);
+    if (!user) {
+      return res
+        .status(400)
+        .json({ status: false, message: "User does not exist" });
     }
 
-    if (pass_code !== verifyUserData[0].pass_code) {
-      message = "You have entered wrong passcode";
-      return res.status(400).json({ success: false, message });
+    if (!user.activation) {
+      // check if token exists
+      const tokenData = await VerifyTokenModel.findOne({ user_id, token });
+      if (!tokenData) {
+        const verifyUser = await verifyUserSignup(user._id, user.email);
+        if (verifyUser.error) {
+          return res.status(500).json({
+            status: false,
+            message: "Could not send email verification link.",
+          });
+        }
+      }
+      // if valid token, delete token record
+      await VerifyTokenModel.deleteOne({ user_id, token });
+      // activate the user
+      await UserModel.updateOne({ _id: user_id }, { activation: true });
     }
-    // check if passcode has expired
-    const time_now = new Date();
-    let time_diff = time_now - verifyUserData[0].updatedAt;
-    time_diff = time_diff / 1000; // convert to milliseconds
-    // let seconds = Math.floor(time_diff % 60); // get seconds from milliseconds
-    let minutes = Math.floor(time_diff / 60); // get minutes from milliseconds
-    if (minutes >= 10) {
-      message = "Passcode has been expired";
-      return res.status(400).json({ success: false, message });
-    }
-    verifyUserData = await verifyPasswordModel.deleteOne({ user_email: email });
-    // Activate user account
-    verifyUserData = await UserModel.updateOne(
-      { email },
-      { $set: { activation: true } },
-      { new: true },
+
+    let expireTime = "7d";
+    const jwtToken = jwt.sign(
+      { id: user._id, user_name: user.name },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: expireTime },
     );
-    message = "Successfully activated your account";
 
-    return res.status(200).json({ success: true, message });
+    return res.status(200).json({
+      status: true,
+      token: jwtToken,
+      message: "Your account has been activated.",
+    });
   } catch (error) {
     console.log(error);
     return res
       .status(500)
-      .json({ success: false, message: "Some error occurred in the server" });
+      .json({ status: false, message: "Some error occurred in the server" });
   }
 };
 
 // Send passcode to email for email verification
-const verifyUserSignup = async (user_email, name) => {
+const verifyUserSignup = async (user_id, to_email) => {
   try {
-    name = name.split(" ")[0];
-    // set a random 6 digits passcode
-    let pass_code = Math.floor(100000 + Math.random() * 900000);
-    // Send the codes in email to the user
-    let send_mail, mail_body, verifyData;
+    let token = await VerifyTokenModel.findOne({
+      user_id: user_id,
+    });
 
-    let check_verify = await verifyPasswordModel.find({ user_email });
-    if (check_verify.length === 0) {
-      verifyData = await verifyPasswordModel.create({ user_email, pass_code });
-      // console.log("create verifyData")
-      // console.log(verifyData)
-      mail_body = `<i>Hello ${name},</i>
-                  <br/><br/>
-                  <p>
-                    Welcome to Play my Playlist.<br/>
-                    To activate your account, here is your passcode: <br/>
-                    <h1>${pass_code}</h1><br/>
-                    </p>
-                    <br/><br/>
-                  <p style="font-size: 10px; background-color: yellow"><i><b>Note:</b> Please do not share this passcode to anyone. This is only valid for ${process.env.AUTH_EXPIRES} minutes.</i></p>`;
+    if (!token) {
+      token = await new VerifyTokenModel({
+        user_id: user_id,
+        token: crypto.randomBytes(32).toString("hex"),
+      }).save();
     } else {
-      verifyData = await verifyPasswordModel.updateOne(
-        { user_email },
-        { $set: { pass_code } },
+      await VerifyTokenModel.updateOne(
+        { user_id },
+        { $set: { token: crypto.randomBytes(32).toString("hex") } },
         { new: true },
       );
-      // console.log("updated verifyData")
-      // console.log(verifyData)
-      mail_body = `<i>Hello ${name},</i>
-                    <br/><br/>
-                    <p>
-                      Here is your activation passcode: <br/>
-                      <h1>${pass_code}</h1><br/>
-                      </p>
-                      <br/><br/>
-                    <p style="font-size: 10px; background-color: yellow"><i><b>Note:</b> Please do not share this passcode to anyone. This is only valid for ${process.env.AUTH_EXPIRES} minutes.</i></p>`;
+      token = await VerifyTokenModel.findOne({
+        user_id: user_id,
+      });
     }
 
-    // console.log(mail_body);
-    send_mail = await sendMail(
-      user_email,
-      `PassCode verification Mail`,
+    const link = `${process.env.CLIENT_URL}/user/${user_id}/verify/${token.token}`;
+
+    const mail_body = `<p>Click on below link to verify your email:<br/>${link}</p>`;
+    const mail = await sendMail(
+      to_email,
+      `Email Verification for Play-My-Playlist`,
       mail_body,
     );
 
-    return { verifyData, send_mail };
+    return { mail };
   } catch (error) {
+    console.log(error);
     return { error };
   }
 };
@@ -288,7 +216,15 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ success: false, message });
     }
     if (!user.activation) {
-      message = "Account has not been activated.";
+      message =
+        "Please verify your email using verification link to continue with login.";
+      const verifyUser = await verifyUserSignup(userData._id, email);
+      if (verifyUser.error) {
+        return res.status(500).json({
+          status: false,
+          message: "Could not send email verification link.",
+        });
+      }
       return res.status(401).json({ success: false, message });
     }
     // Check if password matches
@@ -317,20 +253,93 @@ const loginUser = async (req, res) => {
     return res.status(500).json({ success: false, message });
   }
 };
+
+const sendPasswordLink = async (req, res) => {
+  try {
+    const { email } = req.body;
+    let message = "";
+    // Schema defination for Validation of details recieved
+    const schema = Joi.object({
+      email: Joi.string().email().required().label("Email"),
+    });
+    // Validation of details recieved starts here
+    const validate = schema.validate({ email });
+    const { error } = validate;
+    if (error) {
+      message = error.details[0].message;
+      return res.status(400).json({ success: false, message });
+    }
+
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return res.status(400).json({
+        status: false,
+        message: "User with this email does not exist.",
+      });
+    }
+
+    const user_id = user._id;
+    let token = await ResetPasswordModel.findOne({
+      user_id: user_id,
+    });
+
+    if (!token) {
+      token = await new ResetPasswordModel({
+        user_id: user_id,
+        token: crypto.randomBytes(32).toString("hex"),
+      }).save();
+    } else {
+      await ResetPasswordModel.updateOne(
+        { user_id },
+        { $set: { token: crypto.randomBytes(32).toString("hex") } },
+        { new: true },
+      );
+      token = await ResetPasswordModel.findOne({
+        user_id: user_id,
+      });
+    }
+
+    const link = `${process.env.CLIENT_URL}/reset-password/${user_id}/verify/${token.token}`;
+
+    const mail_body = `<p>Click on below reset your password:<br/>${link}</p>`;
+    const mail = await sendMail(
+      to_email,
+      `Reset Password for Play-My-Playlist`,
+      mail_body,
+    );
+    if (mail.error) {
+      return res.status(500).json({
+        status: false,
+        message: "Could not send reset password link.",
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Reset password link has been sent to your email.",
+    });
+  } catch (e) {
+    return res
+      .status(500)
+      .json({ status: false, message: "Something went wrong in server." });
+  }
+};
+
 //forgot password
 const forgotPassword = async (req, res) => {
-  const { user_id, email, password } = req.body;
+  const { user_id, password } = req.body;
   let message = "";
   // Schema defination for Validation of details recieved
   const schema = Joi.object({
-    email: Joi.string().email().required(),
+    user_id: Joi.string().required().label("User ID"),
     password: Joi.string()
       .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
       .min(6)
-      .required(),
+      .required()
+      .label("Password"),
   });
   // Validation of details recieved starts here
-  const validate = schema.validate({ email, password });
+  const validate = schema.validate({ user_id, password });
   const { error } = validate;
   if (error) {
     message = error.details[0].message;
@@ -339,27 +348,24 @@ const forgotPassword = async (req, res) => {
 
   // Testing STARTS here
   try {
-    const user = await UserModel.findOne({ email }).select("+password");
+    const user = await UserModel.findById(user_id).select("+password");
     // If user does not exist
     if (!user) {
-      message = "Account does not exist with this emailID.";
+      message = "User does not exist.";
       return res.status(401).json({ success: false, message });
     }
     // updating  password
     const salt = await bcrypt.genSalt(10);
     const value = await bcrypt.hash(password, salt);
-    const updatedata = await UserModel.updateOne(
-      { email: email },
+    await UserModel.updateOne(
+      { _id: user_id },
       { $set: { password: value } },
       { new: true },
     );
-    if (!updatedata) {
-      message = " Reset password is failed.";
-      return res.status(401).json({ success: false, message });
-    }
+
     message = "Successfuly updated password.";
     // res.cookie("playlist_token", token);
-    return res.status(200).json({ success: true, updatedata, message });
+    return res.status(200).json({ success: true, message });
   } catch (error) {
     message = error._message;
     return res.status(500).json({ success: false, message });
@@ -482,11 +488,10 @@ const logoutUser = async (req, res) => {
 };
 
 module.exports = {
-  checkUserExists,
   createUser,
-  resendPassCode,
-  verifyPassCode,
+  verifyEmail,
   loginUser,
+  sendPasswordLink,
   logoutUser,
   getUserDetailsByID,
   forgotPassword,
