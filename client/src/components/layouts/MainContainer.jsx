@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import jwt_decode from "jwt-decode";
 import { useCookies } from "react-cookie";
 
-
-import { DATA_URL } from "../../index";
-
 const MainContainer = () => {
-
   const location = useLocation();
   const history = useNavigate();
-  
+
   const [cookies] = useCookies(["playlist_token"]);
 
   const [loaded, setLoaded] = useState(false);
@@ -33,33 +29,41 @@ const MainContainer = () => {
           }
         }
       } else {
-        if (!(location.pathname === "/home" || location.pathname === "/login-signup")) {
+        if (
+          !(
+            location.pathname === "/home" ||
+            location.pathname === "/login-signup"
+          )
+        ) {
           history("../login-signup");
         }
       }
       setLoaded(true);
-    } catch(e) {
-      if (!(location.pathname === "/home" || location.pathname === "/login-signup")) {
+    } catch (e) {
+      if (
+        !(
+          location.pathname === "/home" || location.pathname === "/login-signup"
+        )
+      ) {
         history("../home");
       }
       setLoaded(true);
     }
   }
 
-
   if (loaded) {
     return (
-      <div className='main-container-div'>
-          <Outlet />
+      <div className="main-container-div">
+        <Outlet />
       </div>
-    )
+    );
   } else {
     return (
-      <div className='main-container-div'>
-          <h1>Loading.......</h1>
+      <div className="main-container-div">
+        <h1>Loading.......</h1>
       </div>
-    )
+    );
   }
-}
+};
 
-export default MainContainer
+export default MainContainer;

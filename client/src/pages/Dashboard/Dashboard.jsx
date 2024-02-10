@@ -18,7 +18,6 @@ import io from "socket.io-client";
 import { useCookies } from "react-cookie";
 import jwt_decode from "jwt-decode";
 
-import { DATA_URL } from "../../index";
 import Swal from "sweetalert2";
 import AvatarIcon from "../../components/AvatarIcon/AvatarIcon";
 import MainHeaderDiv from "../../components/layouts/MainHeaderDiv/MainHeaderDiv";
@@ -37,6 +36,7 @@ import PlayInstructionsModal from "../../components/PlayInstructions/PlayInstruc
 import FloatingTextBlock from "../../components/layouts/FloatingTextBlock/FloatingTextBlock";
 import PlayerDashboard from "../PlayerDashboard/PlayerDashboard";
 import GameRoom from "../GameRoom/GameRoom";
+import { BASE_URL } from "../../config/constants";
 // import { NotificationToast } from "../../functionalities/pageFunctions";
 
 let socket;
@@ -51,7 +51,7 @@ const Dashboard = (props) => {
 
   const [cookies] = useCookies(["playlist_token"]);
 
-  const ENDPOINT = DATA_URL;
+  const ENDPOINT = BASE_URL;
   const [GameStatus, setGameStatus] = useState("not_started");
   const [GameEvent, setGameEvent] = useState("start");
   const [joinRoomStatus, setJoinRoomStatus] = useState(false);
@@ -117,10 +117,10 @@ const Dashboard = (props) => {
     try {
       if (cookies.playlist_token) {
         var decoded = jwt_decode(cookies.playlist_token);
-        
+
         if (decoded) {
           // console.log(decoded)
-          fetchUserData(decoded.id)
+          fetchUserData(decoded.id);
           setUserID(decoded.id);
           setGuestName(decoded.user_name);
           // setRoomID(room_id);
@@ -129,42 +129,41 @@ const Dashboard = (props) => {
           fetchSongs(id, decoded.id);
         }
       }
-    } catch(error) {
-      console.log("error")
-      console.log(error)
+    } catch (error) {
+      console.log("error");
+      console.log(error);
     }
-  }
+  };
 
   // Function to set user Details
   const fetchUserData = async (user_id) => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/user/get-user-details`,
+        `${BASE_URL}/playlist/api/user/get-user-details`,
         {
           user_id,
-        }
+        },
       );
 
       if (response.status === 200) {
         console.log(response.data.userInfo);
         setUserInfo(response.data.userInfo);
       }
-
-    } catch(error) {
+    } catch (error) {
       if (error.response) {
         console.log(error.response);
       } else {
         console.log(error);
       }
     }
-  }
+  };
 
   // Function to fetch room Details
   const fetchRoomDetails = async (room_id) => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/room/get-room-details`,
-        { room_id }
+        `${BASE_URL}/playlist/api/room/get-room-details`,
+        { room_id },
       );
 
       if (response.status === 200) {
@@ -176,7 +175,7 @@ const Dashboard = (props) => {
         setHostID(response.data.hostDetails._id);
         // set host profile pic
         let profile_pic = response.data.hostDetails.profile_pic_url;
-        setHostProfilePic(profile_pic && DATA_URL + "/" + profile_pic);
+        setHostProfilePic(profile_pic && BASE_URL + "/" + profile_pic);
       }
     } catch (error) {
       if (error.response) {
@@ -201,8 +200,8 @@ const Dashboard = (props) => {
   const fetchRoomPlayers = async (room_id) => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/room/get-room-users`,
-        { room_id }
+        `${BASE_URL}/playlist/api/room/get-room-users`,
+        { room_id },
       );
 
       if (response.status === 200) {
@@ -233,11 +232,11 @@ const Dashboard = (props) => {
   const fetchSongs = async (room_id, player_id) => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/song/get-player-songs`,
+        `${BASE_URL}/playlist/api/song/get-player-songs`,
         {
           room_id,
           player_id,
-        }
+        },
       );
 
       if (response.status === 200) {
@@ -424,10 +423,10 @@ const Dashboard = (props) => {
   const fetchRoomScores = async (room_id) => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/song/fetch-room-scores`,
+        `${BASE_URL}/playlist/api/song/fetch-room-scores`,
         {
           room_id,
-        }
+        },
       );
       console.log("Fetch scores of the room");
       if (response.status === 200) {
@@ -460,10 +459,10 @@ const Dashboard = (props) => {
   const deleteRoomVotes = async (room_id) => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/room//delete-room-current-data`,
+        `${BASE_URL}/playlist/api/room//delete-room-current-data`,
         {
           room_id,
-        }
+        },
       );
 
       if (response.status === 200) {
@@ -482,10 +481,10 @@ const Dashboard = (props) => {
   const resetRoomSongs = async (room_id) => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/room/reset-room-songs-status`,
+        `${BASE_URL}/playlist/api/room/reset-room-songs-status`,
         {
           room_id,
-        }
+        },
       );
 
       if (response.status === 200) {
@@ -504,11 +503,11 @@ const Dashboard = (props) => {
   const checkPlayerVotedStatus = async (room_id, song_id) => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/song/check-vote-status`,
+        `${BASE_URL}/playlist/api/song/check-vote-status`,
         {
           room_id,
           song_id,
-        }
+        },
       );
 
       if (response.status === 200) {
@@ -528,11 +527,11 @@ const Dashboard = (props) => {
   const fetchScores = async (song_id, room_id) => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/song/fetch-players-scores`,
+        `${BASE_URL}/playlist/api/song/fetch-players-scores`,
         {
           room_id,
           song_id,
-        }
+        },
       );
       console.log("Fetch scores of players");
       if (response.status === 200) {
@@ -564,11 +563,11 @@ const Dashboard = (props) => {
     try {
       console.log("Check if all players voted");
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/song/check-all-votes`,
+        `${BASE_URL}/playlist/api/song/check-all-votes`,
         {
           room_id: roomObjID,
           song_id: currentSongID,
-        }
+        },
       );
       if (response.status === 200) {
         // setToastData({
@@ -753,12 +752,12 @@ const Dashboard = (props) => {
     try {
       console.log("add songs function");
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/song/add-song`,
+        `${BASE_URL}/playlist/api/song/add-song`,
         {
           room_id: roomObjID,
           player_id: userID,
           song: songLink,
-        }
+        },
       );
       if (response.status === 200) {
         fetchSongs(roomObjID, userID);
@@ -817,10 +816,10 @@ const Dashboard = (props) => {
       console.log("handleDeleteSong function");
       if (deleteConfirm.isConfirmed) {
         const response = await axios.post(
-          `${DATA_URL}/playlist/api/song/delete-song`,
+          `${BASE_URL}/playlist/api/song/delete-song`,
           {
             song_id,
-          }
+          },
         );
         if (response.status === 200) {
           fetchSongs(roomObjID, userID);
@@ -907,8 +906,8 @@ const Dashboard = (props) => {
     try {
       console.log("handleFetchRoomSongs function");
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/room/reset-room-songs-status`,
-        { room_id }
+        `${BASE_URL}/playlist/api/room/reset-room-songs-status`,
+        { room_id },
       );
       if (response.status === 200) {
         console.log(response);
@@ -927,7 +926,7 @@ const Dashboard = (props) => {
   //   try {
   //     console.log("handleFetchRoomSongs function");
   //     const response = await axios.post(
-  //       `${DATA_URL}/playlist/api/song/get-room-songs`,
+  //       `${BASE_URL}/playlist/api/song/get-room-songs`,
   //       { room_id, player_id }
   //     );
   //     if (response.status === 200) {
@@ -948,8 +947,8 @@ const Dashboard = (props) => {
     try {
       console.log("checkRoomSongCount function");
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/song//get-room-songs`,
-        { room_id }
+        `${BASE_URL}/playlist/api/song//get-room-songs`,
+        { room_id },
       );
 
       if (response.status === 200) {
@@ -977,8 +976,8 @@ const Dashboard = (props) => {
     try {
       console.log("handleDeleteRoomSong function");
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/song/delete-song`,
-        { song_id }
+        `${BASE_URL}/playlist/api/song/delete-song`,
+        { song_id },
       );
 
       if (response.status === 200) {
@@ -997,8 +996,8 @@ const Dashboard = (props) => {
     try {
       console.log("changeSongStatus function");
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/song//change-song-status`,
-        { room_id: roomObjID, song_id: currentSongID, status }
+        `${BASE_URL}/playlist/api/song//change-song-status`,
+        { room_id: roomObjID, song_id: currentSongID, status },
       );
 
       if (response.status === 200) {
@@ -1017,8 +1016,8 @@ const Dashboard = (props) => {
   const handlePickRandomSong = async (room_id) => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/song/get-random-room-song`,
-        { room_id }
+        `${BASE_URL}/playlist/api/song/get-random-room-song`,
+        { room_id },
       );
 
       console.log("handlePickRandomSong function");
@@ -1071,13 +1070,13 @@ const Dashboard = (props) => {
       }
 
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/song/vote-player`,
+        `${BASE_URL}/playlist/api/song/vote-player`,
         {
           room_id: roomObjID,
           song_id: song_id,
           voted_player_id,
           player_id: userID,
-        }
+        },
       );
 
       if (response.status === 200) {
@@ -1085,7 +1084,7 @@ const Dashboard = (props) => {
         console.log(response);
         // setVotedPlayer(votedPlayer.push(userID));
         let userVoteData = response.data.roomUsers.find(
-          (user) => user._id === userID
+          (user) => user._id === userID,
         );
         setUserData(userVoteData);
         // console.log(userVoteData);
@@ -1130,12 +1129,12 @@ const Dashboard = (props) => {
   };
 
   return (
-    <div className='main-container'>
+    <div className="main-container">
       <MainHeaderDiv
-        title='Exit Room'
-        routeName='Home'
+        title="Exit Room"
+        routeName="Home"
         redirectPromt={true}
-        promptMessage='Are you sure, you want to leave the room?'
+        promptMessage="Are you sure, you want to leave the room?"
         userInfo={props.userInfo}
       />
 
@@ -1145,7 +1144,7 @@ const Dashboard = (props) => {
       <>
         <Modal
           // size="lg"
-          backdrop='static'
+          backdrop="static"
           show={showPlaySong}
           keyboard={false}
           onHide={() => setShowPlaySong(false)}
@@ -1153,7 +1152,7 @@ const Dashboard = (props) => {
           <Modal.Header closeButton>
             <Modal.Title>Play Song</Modal.Title>
           </Modal.Header>
-          <Modal.Body className='d-flex justify-content-center align-items-center'>
+          <Modal.Body className="d-flex justify-content-center align-items-center">
             <ReactPlayer
               url={
                 songURL.length !== 0
@@ -1267,11 +1266,11 @@ const Dashboard = (props) => {
           >
             <Toast.Header>
               <img
-                src='holder.js/20x20?text=%20'
-                className='rounded me-2'
-                alt=''
+                src="holder.js/20x20?text=%20"
+                className="rounded me-2"
+                alt=""
               />
-              <strong className='me-auto'>{toastData.title}</strong>
+              <strong className="me-auto">{toastData.title}</strong>
               {/* <small className="text-muted">{moment(toastData.time).startOf('minutes').fromNow()}</small> */}
             </Toast.Header>
             <Toast.Body>{toastData.message}</Toast.Body>

@@ -11,13 +11,13 @@ import {
   Col,
 } from "react-bootstrap";
 import axios from "axios";
-import { DATA_URL } from "../../index";
 import Swal from "sweetalert2";
 import { useCookies } from "react-cookie";
 import "./UserSettings.css";
 import profilePic from "../../images/user/user-profile.png";
 import MainHeaderDiv from "../../components/layouts/MainHeaderDiv/MainHeaderDiv";
 import { IoAccessibilitySharp } from "react-icons/io5";
+import { BASE_URL } from "../../config/constants";
 
 const UserSettings = ({ userInfo }) => {
   const history = useNavigate();
@@ -37,7 +37,9 @@ const UserSettings = ({ userInfo }) => {
   }, []);
 
   const fetchUserDetails = () => {
-    setUserPicURL(userInfo.profile_pic_url && DATA_URL + "/" + userInfo.profile_pic_url);
+    setUserPicURL(
+      userInfo.profile_pic_url && BASE_URL + "/" + userInfo.profile_pic_url,
+    );
     setuserEmail(userInfo.email);
   };
 
@@ -94,7 +96,7 @@ const UserSettings = ({ userInfo }) => {
 
       const response = await axios({
         method: "POST",
-        url: `${DATA_URL}/playlist/api/user/user-update`,
+        url: `${BASE_URL}/playlist/api/user/user-update`,
         data: formData,
         header: {
           Accept: "application/json",
@@ -129,21 +131,17 @@ const UserSettings = ({ userInfo }) => {
   };
 
   return (
-    <div className='main-container'>
-      <MainHeaderDiv
-        title='Exit Room'
-        routeName='Home'
-        userInfo={userInfo}
-      />
-      <div className='settings-div'>
-        <Container fluid className='main1-box'>
+    <div className="main-container">
+      <MainHeaderDiv title="Exit Room" routeName="Home" userInfo={userInfo} />
+      <div className="settings-div">
+        <Container fluid className="main1-box">
           <Row md={2} xs={1}>
             <Col>
-              <Form.Group className='mb-2 d-flex justify-content-center'>
+              <Form.Group className="mb-2 d-flex justify-content-center">
                 <Image
                   width={260}
                   height={260}
-                  className='bg-secondary p-2 rounded-circle'
+                  className="bg-secondary p-2 rounded-circle"
                   src={
                     userProfilePic
                       ? URL.createObjectURL(userProfilePic)
@@ -155,11 +153,11 @@ const UserSettings = ({ userInfo }) => {
                   style={{ objectFit: "cover" }}
                 />
               </Form.Group>
-              <Form.Group className='d-flex flex-column align-self-end'>
+              <Form.Group className="d-flex flex-column align-self-end">
                 <Form.Control
-                  type='file'
+                  type="file"
                   // size="sm"
-                  className='mb-2'
+                  className="mb-2"
                   onChange={(e) => {
                     e.persist();
                     setUserProfilePic(e.target.files[0]);
@@ -168,34 +166,34 @@ const UserSettings = ({ userInfo }) => {
               </Form.Group>
             </Col>
             <Col>
-              <Form.Group className='mb-2'>
+              <Form.Group className="mb-2">
                 <Form.Label>Enter your Email ID</Form.Label>
                 <Form.Control
-                  type='email'
+                  type="email"
                   value={userEmail}
                   onChange={(e) => setuserEmail(e.target.value)}
                 />
               </Form.Group>
-              <Form.Group className='mb-2'>
+              <Form.Group className="mb-2">
                 <Form.Label>Enter your current password</Form.Label>
                 <Form.Control
-                  type='password'
+                  type="password"
                   value={oldPassword}
                   onChange={(e) => setOldPassword(e.target.value)}
                 />
               </Form.Group>
-              <Form.Group className='mb-2'>
+              <Form.Group className="mb-2">
                 <Form.Label>Set up a new password</Form.Label>
                 <Form.Control
-                  type='password'
+                  type="password"
                   value={newForgotPassword}
                   onChange={(e) => setnewForgotPassword(e.target.value)}
                 />
               </Form.Group>
-              <Form.Group className='mb-2'>
+              <Form.Group className="mb-2">
                 <Form.Label>Confirm your password</Form.Label>
                 <Form.Control
-                  type='password'
+                  type="password"
                   value={confirmForgotPassword}
                   onChange={(e) => setConfirmForgotPassword(e.target.value)}
                 />
@@ -204,7 +202,7 @@ const UserSettings = ({ userInfo }) => {
           </Row>
           <Row>
             <Col>
-              <Button className='w-100 my-2' onClick={handleUpdateUser}>
+              <Button className="w-100 my-2" onClick={handleUpdateUser}>
                 Update User Details
               </Button>
             </Col>

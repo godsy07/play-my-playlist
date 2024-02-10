@@ -6,16 +6,18 @@ import "./main-header.styles.css";
 import { Dropdown } from "react-bootstrap";
 import AvatarIcon from "../../../components/AvatarIcon/AvatarIcon";
 import axios from "axios";
-import { DATA_URL } from "../../..";
 import { useCookies } from "react-cookie";
+import { BASE_URL } from "../../../config/constants";
+import { useUserContext } from "../../providers/AuthProvider";
 
 const MainHeaderDiv = (
-  { title, routeName, userProfilePic, redirectPromt, promptMessage, userInfo },
-  ref
+  { title, routeName, redirectPromt, promptMessage },
+  ref,
 ) => {
   const history = useNavigate();
-  const [removeCookie] = useCookies(["playlist_token"]);
-  // const [cookie, removeCookie] = useCookies(["playlist_token"]);
+  const { user, logoutUser } = useUserContext();
+  const [cookies, removeCookie] = useCookies(["playlist_token"]);
+
   const promptCall = (path) => {
     Swal.fire({
       title: promptMessage,
@@ -24,7 +26,7 @@ const MainHeaderDiv = (
       denyButtonText: `No`,
     }).then((result) => {
       if (result.isConfirmed) {
-        history(path,{ replace: true });
+        history(path, { replace: true });
         // history("/");
       } else if (result.isDenied) {
         return;
@@ -44,7 +46,7 @@ const MainHeaderDiv = (
     if (redirectPromt) {
       promptCall(routeName);
     } else {
-      history(routeName,{ replace: true });
+      history(routeName, { replace: true });
     }
   };
 
@@ -52,11 +54,17 @@ const MainHeaderDiv = (
   const handleLogout = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.get(`${DATA_URL}/playlist/api/user/logout`, {
+      const response = await axios.get(`${BASE_URL}/playlist/api/user/logout`, {
         withCredentials: true,
       });
       if (response.status === 200) {
         console.log("logout");
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: "You have successfully logged out of your account.",
+        });
+        logoutUser();
         removeCookie("playlist_token");
         history({
           pathname: "/",
@@ -64,11 +72,6 @@ const MainHeaderDiv = (
           state: {
             message: "You have successfully logged out of your account.",
           },
-        });
-        Swal.fire({
-          icon: "success",
-          title: "Success",
-          text: "You have successfully logged out of your account.",
         });
 
         return;
@@ -81,7 +84,6 @@ const MainHeaderDiv = (
           text: error.response.data.message,
         });
       } else {
-        // console.log(error.message);
         Swal.fire({
           icon: "error",
           title: "Error",
@@ -93,42 +95,44 @@ const MainHeaderDiv = (
   };
 
   return (
-    <div ref={ref} className='main-header'>
+    <div ref={ref} className="main-header">
       <div>
         <img
           src={logo}
-          alt='Logo'
-          className='logo-image'
+          alt="Logo"
+          className="logo-image"
           style={{ cursor: "pointer" }}
           onClick={redirectHome}
         />
       </div>
 
-      <div className='username'>
-        {userInfo && (
+      <div className="username">
+        {user && (
           <>
             <AvatarIcon
-              imageUrl={ userInfo.profile_pic_url !== null && DATA_URL + "/" + userInfo.profile_pic_url }
+              imageUrl={
+                user.profile_pic_url && BASE_URL + "/" + user.profile_pic_url
+              }
               // imageUrl='https://robohash.org/34?set=set2'
-              AvatarWidth='30'
+              AvatarWidth="30"
             />
 
-            <Dropdown className='d-inline mx-2'>
+            <Dropdown className="d-inline mx-2">
               <Dropdown.Toggle
-                className='text-dark'
-                as='span'
-                id='dropdown-autoclose-true'
+                className="text-dark"
+                as="span"
+                id="dropdown-autoclose-true"
               >
                 <em>
-                  <i>{userInfo.name.split(" ")[0]}</i>
+                  <i>{user.name.split(" ")[0]}</i>
                 </em>
               </Dropdown.Toggle>
 
               <Dropdown.Menu>
-                <Dropdown.Item as={Link} to='userSettings'>
-                  User Settings
+                <Dropdown.Item as={Link} to="userSettings">
+                  Settings
                 </Dropdown.Item>
-                <Dropdown.Item href='#'>User Rooms</Dropdown.Item>
+                <Dropdown.Item href="#">Rooms</Dropdown.Item>
                 <Dropdown.Item onClick={handleLogout}>Logout</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>

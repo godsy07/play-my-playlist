@@ -19,7 +19,7 @@ import musicImage from "../../images/gameroom/music.png";
 // import musicImage from "../../images/chatroomimg.png";
 
 import "./game-room.styles.css";
-import { DATA_URL } from "../..";
+import { BASE_URL } from "../../config/constants";
 
 const GameRoom = ({
   userID,
@@ -59,24 +59,24 @@ const GameRoom = ({
     <>
       <>
         <Modal
-          size='lg'
+          size="lg"
           show={showVoteCollectModal}
           onHide={() => toggleVoteCollectModal()}
-          aria-labelledby='contained-modal-title-vcenter'
+          aria-labelledby="contained-modal-title-vcenter"
           centered
-          backdrop='static'
+          backdrop="static"
         >
           <Modal.Header closeButton>
-            <Modal.Title id='contained-modal-title-vcenter text-center'>
+            <Modal.Title id="contained-modal-title-vcenter text-center">
               Select User to Vote
             </Modal.Title>
           </Modal.Header>
-          <Modal.Body className='d-flex'>
+          <Modal.Body className="d-flex">
             {roomPlayers.length !== 0 &&
               roomPlayers.map((player, index) => (
                 <div
                   key={index}
-                  className='d-flex flex-column justify-content-center align-items-center p-2 m-1'
+                  className="d-flex flex-column justify-content-center align-items-center p-2 m-1"
                   style={{
                     cursor: "pointer",
                     border: "1px solid rgb(100,100,100)",
@@ -86,8 +86,8 @@ const GameRoom = ({
                         ? userData.voted_player.length !== 0 &&
                           userData.vote[0].song_id === currentSongID &&
                           userData.voted_player[0]._id === player._id
-                            ? "rgb(102, 255, 102)"
-                            : "rgb(153, 204, 255)"
+                          ? "rgb(102, 255, 102)"
+                          : "rgb(153, 204, 255)"
                         : "rgb(153, 204, 255)",
                     height: "140px",
                     width: "140px",
@@ -97,8 +97,8 @@ const GameRoom = ({
                       ? userData.voted_player.length !== 0 &&
                         userData.vote[0].song_id === currentSongID &&
                         userData.voted_player[0]._id === player._id
-                          ? "You have voted this player"
-                          : "Click here to vote this player"
+                        ? "You have voted this player"
+                        : "Click here to vote this player"
                       : "Click here to vote this player"
                   }
                   // onClick={setVotedPlayer(player._id)}
@@ -109,9 +109,9 @@ const GameRoom = ({
                   <AvatarIcon
                     imageUrl={
                       player.profile_pic_url &&
-                      DATA_URL + "/" + player.profile_pic_url
+                      BASE_URL + "/" + player.profile_pic_url
                     }
-                    AvatarWidth='100'
+                    AvatarWidth="100"
                   />
                   <h6 value={player._id}>{player.name}</h6>
                 </div>
@@ -119,11 +119,8 @@ const GameRoom = ({
           </Modal.Body>
           {userID === hostID && (
             <Modal.Footer>
-              <Button
-                variant='primary'
-                onClick={() => handleVotes()}
-              >
-                <FaThumbsUp size={20} className='me-2' />
+              <Button variant="primary" onClick={() => handleVotes()}>
+                <FaThumbsUp size={20} className="me-2" />
                 Submit
               </Button>
             </Modal.Footer>
@@ -141,11 +138,11 @@ const GameRoom = ({
           <i>
             {roomDetails !== null && (
               <div>
-                <span className='me-2'>
+                <span className="me-2">
                   <b>Room Name:</b> {roomDetails.room_name}
                 </span>
                 |
-                <span className='ms-2'>
+                <span className="ms-2">
                   <b>RoomID:</b> {roomDetails.room_id}
                 </span>
               </div>
@@ -177,7 +174,7 @@ const GameRoom = ({
               }}
             >
               <Col
-                className='d-flex flex-column justify-content-center align-items-center rounded'
+                className="d-flex flex-column justify-content-center align-items-center rounded"
                 style={{
                   border: GameEvent !== "end" ? "1px solid gray" : "none",
                   backgroudColor: "yellow",
@@ -192,7 +189,7 @@ const GameRoom = ({
                 {showScoreboard === "hide" ? (
                   <>
                     <div
-                      className='d-flex justify-content-center align-items-center p-0 my-2'
+                      className="d-flex justify-content-center align-items-center p-0 my-2"
                       style={{
                         // backgroundColor: "rgb(150, 200, 100)",
                         height: "100%",
@@ -210,11 +207,11 @@ const GameRoom = ({
                       />
                     </div>
                     <InputGroup
-                      className='mb-2'
+                      className="mb-2"
                       style={{ position: "relative" }}
                     >
                       <InputGroup.Text
-                        className='px-1'
+                        className="px-1"
                         style={{
                           position: "relative",
                           borderRadius: "50% 0px 0px 50%",
@@ -244,11 +241,11 @@ const GameRoom = ({
                         </span>
                       </InputGroup.Text>
                       <Form.Control
-                        type='text'
+                        type="text"
                         value={currentSong !== "" ? currentSong : ""}
                         disabled
                       />
-                      <InputGroup.Text className='px-1'>
+                      <InputGroup.Text className="px-1">
                         <FaPlay
                           onClick={(e) => handlePlaySong(e, currentSong)}
                           style={{ fontSize: "24px", width: "50px" }}
@@ -259,17 +256,17 @@ const GameRoom = ({
                 ) : (
                   showScoreboard === "show_scores" && (
                     <>
-                      <h2 className='mb-2 text-center'>Game Scores</h2>
-                      <div className='w-100 h-100 d-flex justify-content-center align-items-center'>
+                      <h2 className="mb-2 text-center">Game Scores</h2>
+                      <div className="w-100 h-100 d-flex justify-content-center align-items-center">
                         <Table
-                          className='text-center'
+                          className="text-center"
                           style={{ captionSide: "top" }}
                           striped
                           bordered
                           hover
                         >
                           {!roomScores && (
-                            <caption className='text-center'>
+                            <caption className="text-center">
                               Right Answer:{" "}
                               {answerData.length !== 0 &&
                                 answerData[0].player.name}
@@ -308,7 +305,7 @@ const GameRoom = ({
                 )}
 
                 <Button
-                  className='w-100 text-center mb-2'
+                  className="w-100 text-center mb-2"
                   variant={
                     GameEvent === "results" ||
                     GameEvent === "next" ||
@@ -354,26 +351,30 @@ const GameRoom = ({
               {roomPlayers.map((player, index) => (
                 <Col
                   key={index}
-                  className='d-sm-none d-none d-md-flex flex-column justify-content-center align-items-center text-center rounded'
+                  className="d-sm-none d-none d-md-flex flex-column justify-content-center align-items-center text-center rounded"
                   style={{
                     backgroudColor: "yellow",
                     minHeight: "120px",
                   }}
                 >
-                  <div className='player-info'>
-                    <div className='avatar1' style={{ position: "relative" }}>
+                  <div className="player-info">
+                    <div className="avatar1" style={{ position: "relative" }}>
                       <AvatarIcon
                         imageUrl={
                           player.profile_pic_url &&
-                          DATA_URL + "/" + player.profile_pic_url
+                          BASE_URL + "/" + player.profile_pic_url
                         }
-                        AvatarWidth='180'
+                        AvatarWidth="180"
                         votedStatus={true}
                         votedStatusValue={
-                          player.voted_player.length !== 0 && player.vote[0].song_id === currentSongID ? true : false
+                          player.voted_player.length !== 0 &&
+                          player.vote[0].song_id === currentSongID
+                            ? true
+                            : false
                         }
                         votedStatusText={
-                          player.voted_player.length !== 0 && player.vote[0].song_id === currentSongID
+                          player.voted_player.length !== 0 &&
+                          player.vote[0].song_id === currentSongID
                             ? "Player has voted"
                             : "Player has not voted"
                         }
@@ -389,7 +390,8 @@ const GameRoom = ({
                     </div>
                     <div className="text-center">
                       {player.name.split(" ")[0]}{" "}
-                      {player.voted_player.length !== 0 && player.vote[0].song_id === currentSongID &&
+                      {player.voted_player.length !== 0 &&
+                        player.vote[0].song_id === currentSongID &&
                         "has voted " + player.voted_player[0].name + "."}
                     </div>
                   </div>
@@ -399,17 +401,20 @@ const GameRoom = ({
           ) : (
             <>
               <Row>
-                <Col md={8} className="d-flex flex-column justify-content-center align-content-center" style={{ borderRadius: "10px 0 0 10px" }}>
-
+                <Col
+                  md={8}
+                  className="d-flex flex-column justify-content-center align-content-center"
+                  style={{ borderRadius: "10px 0 0 10px" }}
+                >
                   {topPlayer !== null && (
                     <div className="d-flex flex-column justify-content-center align-items-center">
                       <h3 className="text-center">Winner</h3>
                       <AvatarIcon
                         imageUrl={
                           topPlayer.profile_pic_url &&
-                          DATA_URL + "/" + topPlayer.profile_pic_url
+                          BASE_URL + "/" + topPlayer.profile_pic_url
                         }
-                        AvatarWidth='180'
+                        AvatarWidth="180"
                         showStatus={true}
                         statusDetails="winner"
                         streamButtons={true}
@@ -422,22 +427,31 @@ const GameRoom = ({
                         // toggleVideo={() => setPassVideo(!passVideo)}
                       />
                       <div className="text-center">
-                        {topPlayer.name.split(" ")[0] + " : " + topPlayer.score_points[0].points + " points"}
+                        {topPlayer.name.split(" ")[0] +
+                          " : " +
+                          topPlayer.score_points[0].points +
+                          " points"}
                       </div>
                     </div>
                   )}
 
-                  <div style={{ minHeight: "260px" }} className='my-3 d-flex justify-content-between'>
+                  <div
+                    style={{ minHeight: "260px" }}
+                    className="my-3 d-flex justify-content-between"
+                  >
                     {scoresData.map((player, index) => {
                       if (index !== 0) {
                         return (
-                          <div key={index} className='d-flex flex-column justify-content-center align-items-center'>
+                          <div
+                            key={index}
+                            className="d-flex flex-column justify-content-center align-items-center"
+                          >
                             <AvatarIcon
                               imageUrl={
                                 player.profile_pic_url &&
-                                DATA_URL + "/" + player.profile_pic_url
+                                BASE_URL + "/" + player.profile_pic_url
                               }
-                              AvatarWidth='140'
+                              AvatarWidth="140"
                               streamButtons={true}
                               streamData={streamVideo}
                               passAudio={passAudio}
@@ -448,7 +462,10 @@ const GameRoom = ({
                               // toggleVideo={() => setPassVideo(!passVideo)}
                             />
                             <div className="text-center">
-                              {player.name.split(" ")[0] + ": " + player.score_points[0].points + " points"}
+                              {player.name.split(" ")[0] +
+                                ": " +
+                                player.score_points[0].points +
+                                " points"}
                             </div>
                           </div>
                         );
@@ -456,8 +473,8 @@ const GameRoom = ({
                     })}
                   </div>
                   <Button
-                    className='w-100 text-center mb-2'
-                    variant='warning'
+                    className="w-100 text-center mb-2"
+                    variant="warning"
                     onClick={(e) => handleExitRoom()}
                   >
                     EXIT ROOM
@@ -465,7 +482,7 @@ const GameRoom = ({
                 </Col>
                 <Col
                   md={4}
-                  className='bg-info'
+                  className="bg-info"
                   style={{ borderRadius: "0 10px 10px 0" }}
                 >
                   <h4>Chat Room:</h4>

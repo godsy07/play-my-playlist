@@ -3,9 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { Container, Button, Form, Col, Row } from "react-bootstrap";
 import "./ForgotPassword-Style.css";
 import axios from "axios";
-import { DATA_URL } from "../../index";
 import Swal from "sweetalert2";
 import { useCookies } from "react-cookie";
+import { BASE_URL } from "../../config/constants";
 
 const ForgotPassword = (props) => {
   const history = useNavigate();
@@ -47,7 +47,7 @@ const ForgotPassword = (props) => {
   const forgotUser = async () => {
     try {
       const response = await axios.post(
-        `${DATA_URL}/playlist/api/user/forgot-password`,
+        `${BASE_URL}/playlist/api/user/forgot-password`,
         {
           email: forgotEmail,
           password: newForgotPassword,
