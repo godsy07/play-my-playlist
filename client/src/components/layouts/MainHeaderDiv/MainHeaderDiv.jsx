@@ -8,14 +8,16 @@ import AvatarIcon from "../../../components/AvatarIcon/AvatarIcon";
 import axios from "axios";
 import { useCookies } from "react-cookie";
 import { BASE_URL } from "../../../config/constants";
+import { useUserContext } from "../../providers/AuthProvider";
 
 const MainHeaderDiv = (
-  { title, routeName, userProfilePic, redirectPromt, promptMessage, userInfo },
+  { title, routeName, redirectPromt, promptMessage },
   ref,
 ) => {
   const history = useNavigate();
-  const [removeCookie] = useCookies(["playlist_token"]);
-  // const [cookie, removeCookie] = useCookies(["playlist_token"]);
+  const { user, logoutUser } = useUserContext();
+  const [cookies, removeCookie] = useCookies(["playlist_token"]);
+
   const promptCall = (path) => {
     Swal.fire({
       title: promptMessage,
@@ -57,6 +59,12 @@ const MainHeaderDiv = (
       });
       if (response.status === 200) {
         console.log("logout");
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: "You have successfully logged out of your account.",
+        });
+        logoutUser();
         removeCookie("playlist_token");
         history({
           pathname: "/",
@@ -64,11 +72,6 @@ const MainHeaderDiv = (
           state: {
             message: "You have successfully logged out of your account.",
           },
-        });
-        Swal.fire({
-          icon: "success",
-          title: "Success",
-          text: "You have successfully logged out of your account.",
         });
 
         return;
@@ -81,7 +84,6 @@ const MainHeaderDiv = (
           text: error.response.data.message,
         });
       } else {
-        // console.log(error.message);
         Swal.fire({
           icon: "error",
           title: "Error",
@@ -105,12 +107,11 @@ const MainHeaderDiv = (
       </div>
 
       <div className="username">
-        {userInfo && (
+        {user && (
           <>
             <AvatarIcon
               imageUrl={
-                userInfo.profile_pic_url !== null &&
-                BASE_URL + "/" + userInfo.profile_pic_url
+                user.profile_pic_url && BASE_URL + "/" + user.profile_pic_url
               }
               // imageUrl='https://robohash.org/34?set=set2'
               AvatarWidth="30"
@@ -123,15 +124,15 @@ const MainHeaderDiv = (
                 id="dropdown-autoclose-true"
               >
                 <em>
-                  <i>{userInfo.name.split(" ")[0]}</i>
+                  <i>{user.name.split(" ")[0]}</i>
                 </em>
               </Dropdown.Toggle>
 
               <Dropdown.Menu>
                 <Dropdown.Item as={Link} to="userSettings">
-                  User Settings
+                  Settings
                 </Dropdown.Item>
-                <Dropdown.Item href="#">User Rooms</Dropdown.Item>
+                <Dropdown.Item href="#">Rooms</Dropdown.Item>
                 <Dropdown.Item onClick={handleLogout}>Logout</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>

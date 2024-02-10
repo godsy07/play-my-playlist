@@ -62,11 +62,18 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const logoutUser = () => {
+    setUser(null);
+    removeCookie("playlist_token");
+    setIsAuthenticated(false);
+  };
+
   const value = {
     user,
     setUser,
     checkAuthUser,
     isLoading,
+    logoutUser,
     isAuthenticated,
     setIsAuthenticated,
   };

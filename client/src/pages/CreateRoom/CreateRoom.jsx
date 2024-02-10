@@ -1,8 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import Swal from "sweetalert2";
-import MainHeaderDiv from "../../components/layouts/MainHeaderDiv/MainHeaderDiv";
+import { useNavigate } from "react-router-dom";
+import React, { useState, useRef } from "react";
 import {
   Container,
   Row,
@@ -11,26 +9,28 @@ import {
   Button,
   OverlayTrigger,
   Tooltip,
+  Spinner,
 } from "react-bootstrap";
 import { FaCopy } from "react-icons/fa";
 import { useCookies } from "react-cookie";
-import jwt_decode from "jwt-decode";
 
-import { createRandomPassCode } from "../../functionalities/createPage.function";
 import "./create-room.styles.css";
-import { BASE_URL } from "../../config/constants";
+import { useUserContext } from "../../components/providers/AuthProvider";
+import { createRandomPassCode } from "../../functionalities/createPage.function";
+import MainHeaderDiv from "../../components/layouts/MainHeaderDiv/MainHeaderDiv";
+import {
+  useCreateRoom,
+  useGetAUniqueRoomID,
+} from "../../utils/react-query/queries";
 
 const CreateRoom = (props) => {
-  let history = useNavigate();
+  const navigate = useNavigate();
+  const { user } = useUserContext();
   const [cookies] = useCookies(["playlist_token"]);
-  const [userID, setUserID] = useState(null);
-  const [guestName, setGuestName] = useState("");
-  const [roomID, setRoomID] = useState("");
   const [roomName, setRoomName] = useState("");
   const [passCode, setPassCode] = useState("");
   const [noOfPlayers, setNoOfPlayers] = useState(3);
   const [roomRules, setRoomRules] = useState("");
-  const [userInfo, setUserInfo] = useState(null);
 
   // States for copy texts
   const [copyRoomIDText, setCopyRoomIDText] = useState("Copy your RoomID");
@@ -39,60 +39,10 @@ const CreateRoom = (props) => {
 
   const refPassInput = useRef(null);
 
-  // Room Code set during mount
-  useEffect(() => {
-    checkValidToken();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { data: roomID, isLoading: isFetchingRoomID } = useGetAUniqueRoomID();
 
-  // // API call to check if the token available is valid
-  function checkValidToken() {
-    var decoded = jwt_decode(cookies.playlist_token);
-    if (decoded) {
-      fetchUserData(decoded.id);
-      fetchRoomID();
-    }
-  }
-
-  const fetchUserData = async (user_id) => {
-    try {
-      const response = await axios.post(
-        `${BASE_URL}/playlist/api/user/get-user-details`,
-        {
-          user_id,
-        },
-      );
-
-      if (response.status === 200) {
-        console.log(response.data.userInfo);
-        setUserInfo(response.data.userInfo);
-      }
-    } catch (error) {
-      if (error.response) {
-        console.log(error.response);
-      } else {
-        console.log(error);
-      }
-    }
-  };
-
-  const fetchRoomID = async () => {
-    try {
-      const response = await axios.get(
-        `${BASE_URL}/playlist/api/room/create-roomID`,
-      );
-      if (response.status === 200) {
-        setRoomID(response.data.roomID);
-        console.log(response);
-      }
-    } catch (err) {
-      if (err.response) {
-        console.log(err.response);
-      } else {
-        console.log(err);
-      }
-    }
-  };
+  const { mutateAsync: createRoom, isPending: isCreatingRoom } =
+    useCreateRoom();
 
   // Functions to copy text for roomID and room passcode to clipboard
   const copyPassCode = () => {
@@ -101,7 +51,9 @@ const CreateRoom = (props) => {
     setCopyPasscodeText("Copied");
     setCopyRoomIDText("Copy your RoomID"); // If copied earlier reset its value
   };
+
   const copyRoomID = () => {
+    if (!roomID) return;
     navigator.clipboard.writeText(roomID);
     setCopyRoomIDText("Copied");
     setCopyPasscodeText("Copy your Passcode"); // If copied earlier reset its value
@@ -134,65 +86,33 @@ const CreateRoom = (props) => {
       return true;
     }
   };
-  // Function for createRoom api call
-  const createRoom = async () => {
-    try {
-      const roomData = {
-        room_id: roomID,
-        host_id: userID,
-        room_name: roomName,
-        password: passCode,
-        player_limit: noOfPlayers,
-        room_rules: roomRules,
-      };
-      // api call for creating room in Database
-      const response = await axios.post(
-        `${BASE_URL}/playlist/api/room/create-room`,
-        roomData,
-      );
-
-      if (response.status === 200) {
-        Swal.fire({
-          icon: "success",
-          title: "Success",
-          text: response.data.message,
-        });
-        history("/joinRoom");
-      }
-    } catch (error) {
-      if (error.response) {
-        console.log(error.response);
-        Swal.fire({
-          icon: "error",
-          title: "Oops...",
-          text: error.response.data.message,
-        });
-      } else {
-        console.log(error);
-        Swal.fire({
-          icon: "error",
-          title: "Oops...",
-          text: "Something went wrong!!",
-        });
-      }
-    }
-  };
 
   // handleCreateRoom to submit room data when create Room button is clicked
-  const handleCreateRoom = (e) => {
+  const handleCreateRoom = async (e) => {
     e.preventDefault();
-    if (validateCreateRoom()) {
-      createRoom();
+    if (!validateCreateRoom()) return;
+    const roomData = {
+      room_id: roomID,
+      host_id: user.id,
+      room_name: roomName,
+      password: passCode,
+      player_limit: noOfPlayers,
+      room_rules: roomRules,
+    };
+    const response = await createRoom(roomData);
+    Swal.fire({
+      icon: response.status ? "success" : "error",
+      title: response.status ? "Success" : "Error",
+      text: response.message,
+    });
+    if (response.status) {
+      navigate("/joinRoom");
     }
   };
 
   return (
     <div className="main-container">
-      <MainHeaderDiv
-        title="Join Room"
-        routeName="../joinRoom"
-        userInfo={userInfo}
-      />
+      <MainHeaderDiv title="Join Room" routeName="/joinRoom" />
       <div className="create-room-div">
         <Container className="pb-1" fluid>
           <Row>
@@ -204,7 +124,14 @@ const CreateRoom = (props) => {
                 className="w-full bg-primary text-light rounded py-2 px-3 d-flex align-items-center justify-content-center"
                 style={{ fontSize: "20px" }}
               >
-                ROOM ID: <span className="px-2">{roomID}</span>
+                ROOM ID:{" "}
+                <span className="px-2">
+                  {isFetchingRoomID ? (
+                    <Spinner animation="border" size="sm" />
+                  ) : (
+                    roomID
+                  )}
+                </span>
                 <OverlayTrigger
                   placement="top"
                   delay={{ show: 250, hide: 400 }}
@@ -224,7 +151,7 @@ const CreateRoom = (props) => {
               <Row className="py-2">
                 <Form.Label>User Name:</Form.Label>
                 <Col xs={12} className="py-1">
-                  <Form.Control type="text" value={guestName} disabled />
+                  <Form.Control type="text" value={user.user_name} disabled />
                 </Col>
               </Row>
               <Row className="py-2">
@@ -306,9 +233,14 @@ const CreateRoom = (props) => {
                 size="lg"
                 className="mt-5"
                 style={{ width: "100%" }}
+                disabled={isCreatingRoom}
                 onClick={handleCreateRoom}
               >
-                CREATE ROOM
+                {isCreatingRoom ? (
+                  <Spinner animation="border" size="sm" />
+                ) : (
+                  "CREATE ROOM"
+                )}
               </Button>
             </Col>
           </Row>

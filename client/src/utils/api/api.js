@@ -47,3 +47,42 @@ export const getCurrentUser = async () => {
     url: `${BASE_URL}/playlist/api/user/get-user-data`,
   });
 };
+
+export const getAUniqueRoomID = async () => {
+  const response = await apiRequests({
+    auth: true,
+    method: "GET",
+    url: `${BASE_URL}/playlist/api/room/create-roomID`,
+  });
+  if (response.status) {
+    return response.roomID;
+  }
+  return null;
+};
+
+export const createRoom = async (data) => {
+  return await apiRequests({
+    data,
+    auth: true,
+    method: "POST",
+    url: `${BASE_URL}/playlist/api/room/create-room`,
+  });
+};
+
+export const checkRoomExists = async (data) => {
+  return await apiRequests({
+    data,
+    auth: true,
+    method: "POST",
+    url: `${BASE_URL}/playlist/api/room/check-room`,
+  });
+};
+
+export const joinRoom = async (data) => {
+  return await apiRequests({
+    data,
+    auth: true,
+    method: "POST",
+    url: `${BASE_URL}/playlist/api/room/join-room`,
+  });
+};
